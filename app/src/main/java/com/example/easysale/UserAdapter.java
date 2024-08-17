@@ -59,6 +59,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         ImageView avatarImageView;
         TextView nameTextView;
         TextView emailTextView;
+        ImageView deleteImageView;
 
         UserViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -66,6 +67,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
             avatarImageView = itemView.findViewById(R.id.avatarImageView);
             nameTextView = itemView.findViewById(R.id.nameTextView);
             emailTextView = itemView.findViewById(R.id.emailTextView);
+            deleteImageView = itemView.findViewById(R.id.deleteImageView);
         }
     }
 }

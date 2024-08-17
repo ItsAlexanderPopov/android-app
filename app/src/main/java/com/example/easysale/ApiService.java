@@ -1,10 +1,25 @@
 package com.example.easysale;
 
 import retrofit2.Call;
+import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
+import retrofit2.http.PUT;
+import retrofit2.http.Path;
 import retrofit2.http.Query;
 
+// Define the ApiService interface
 public interface ApiService {
-    // Calling ApiService.getUsers(1) yields api/users?page=1
-    @GET("api/users") Call<UserResponse> getUsers(@Query("page") int page);
+
+    // Fetch users with pagination
+    @GET("api/users")
+    Call<UserResponse> getUsers(@Query("page") int page);
+
+    // Delete a user by ID
+    @DELETE("api/users/{id}")
+    Call<Void> deleteUser(@Path("id") int userId);
+
+    // Update user details by ID
+    @PUT("api/users/{id}")
+    Call<UserResponse> updateUser(@Path("id") int userId, @Body User user);
 }
