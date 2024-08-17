@@ -1,37 +1,48 @@
 package com.example.easysale;
 
-import android.app.Activity;
 import android.os.Bundle;
-
-import androidx.lifecycle.LifecycleOwner;
+import android.util.Log;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import com.example.easysale.databinding.MainActivityBinding;
 import java.util.ArrayList;
 
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
+    private static final String TAG = "MainActivity";
     private UserViewModel userViewModel;
     private UserAdapter userAdapter;
+    private MainActivityBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Set the content view to the layout defined in main_activity.xml
-        setContentView(R.layout.main_activity);
+        binding = MainActivityBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
+        setupRecyclerView();
+        setupViewModel();
+    }
 
-        RecyclerView recyclerView = findViewById(R.id.recyclerView);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+    private void setupRecyclerView() {
         userAdapter = new UserAdapter(new ArrayList<>());
-        recyclerView.setAdapter(userAdapter);
-        userViewModel = new UserViewModel();
-        // Observe the users LiveData from the ViewModel and update the adapter when data changes
-        userViewModel.getUsers().observeForever(users -> userAdapter.setUsers(users));
+        binding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        binding.recyclerView.setAdapter(userAdapter);
+    }
+
+    private void setupViewModel() {
+        userViewModel = new ViewModelProvider(this).get(UserViewModel.class);
+        userViewModel.getUsers().observe(this, users -> {
+            if (users != null) {
+                userAdapter.setUsers(users);
+                updateUserCount(users.size());
+            } else {
+                Log.e(TAG, "Received null user list");
+            }
+        });
         userViewModel.loadUsers();
     }
 
-    @Override
-    // Remove the observer to prevent memory leaks
-    protected void onDestroy() {
-        super.onDestroy();
-        userViewModel.getUsers().removeObservers((LifecycleOwner) this);
+    private void updateUserCount(int count) {
+        binding.userCountTextView.setText("Found " + count + " users");
     }
 }
