@@ -34,6 +34,15 @@ public class MainActivity extends AppCompatActivity implements
         setupRecyclerView();
         setupViewModel();
         setupFab();
+        setupToolbar();
+    }
+
+    private void setupToolbar() {
+        setSupportActionBar(binding.toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+            getSupportActionBar().setTitle("EasySale");
+        }
     }
 
     private void setupRecyclerView() {

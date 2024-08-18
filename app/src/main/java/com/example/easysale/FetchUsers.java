@@ -130,8 +130,8 @@ public class FetchUsers {
                 if (response.isSuccessful()) {
                     Log.d(TAG, "createUser: API call successful");
                     AsyncTask.execute(() -> {
-                        int userCount = userDao.getUserCount();
-                        user.setId(userCount);
+                        int newID = userDao.getMaxUserId() + 1;
+                        user.setId(newID);
                         userDao.insert(user);
                         Log.d(TAG, "createUser: User inserted into local database with ID: " + user.getId());
                         listener.onUserCreated(user);

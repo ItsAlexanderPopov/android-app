@@ -29,6 +29,6 @@ public interface UserDao {
     @Query("DELETE FROM users")
     void deleteAll();
 
-    @Query("SELECT COUNT(*) FROM users")
-    int getUserCount();
+    @Query("SELECT MAX(id) FROM users")
+    int getMaxUserId();
 }
