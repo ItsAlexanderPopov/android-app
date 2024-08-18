@@ -1,11 +1,15 @@
 package com.example.easysale;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.MenuItem;
 import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import com.bumptech.glide.Glide;
@@ -19,6 +23,20 @@ public class EditUserActivity extends AppCompatActivity {
     public static final String EXTRA_STATE = "EXTRA_STATE";
     public static final String STATE_EDIT = "Edit";
     public static final String STATE_ADD = "Add";
+    private static final String DEFAULT_AVATAR = "android.resource://com.example.easysale/drawable/placeholder";
+
+    private final ActivityResultLauncher<Intent> pickImageLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Uri selectedImageUri = result.getData().getData();
+                    if (selectedImageUri != null) {
+                        currentUser.setAvatar(selectedImageUri.toString());
+                        loadAvatarImage(selectedImageUri.toString());
+                    }
+                }
+            }
+    );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,7 +50,8 @@ public class EditUserActivity extends AppCompatActivity {
             if (STATE_EDIT.equals(state)) {
                 currentUser = (User) intent.getSerializableExtra("USER");
             } else if (STATE_ADD.equals(state)) {
-                currentUser = new User(); // Create a new User object for adding
+                currentUser = new User();
+                currentUser.setAvatar(DEFAULT_AVATAR);
             }
         }
 
@@ -41,6 +60,7 @@ public class EditUserActivity extends AppCompatActivity {
         loadUserData();
         setupSaveButton();
         setupBackNavigation();
+        setupAvatarClick();
     }
 
     private void setupToolbar() {
@@ -60,21 +80,22 @@ public class EditUserActivity extends AppCompatActivity {
             binding.editTextFirstName.setText(currentUser.getFirstName());
             binding.editTextLastName.setText(currentUser.getLastName());
             binding.editTextEmail.setText(currentUser.getEmail());
-            // Load avatar image using Glide
-            Glide.with(this)
-                    .load(currentUser.getAvatar())
-                    .circleCrop()
-                    .into(binding.imageViewAvatar);
+            loadAvatarImage(currentUser.getAvatar());
         } else if (STATE_ADD.equals(state)) {
-            // Clear fields for adding a new user
             binding.editTextFirstName.setText("");
             binding.editTextLastName.setText("");
             binding.editTextEmail.setText("");
-            //binding.imageViewAvatar.setImageResource(R.drawable.default_avatar); // Set a default avatar
+            loadAvatarImage(DEFAULT_AVATAR);
         } else {
-            // Handle the error case
             showError("Invalid state or user data not found!");
         }
+    }
+
+    private void loadAvatarImage(String avatarUri) {
+        Glide.with(this)
+                .load(avatarUri)
+                .circleCrop()
+                .into(binding.imageViewAvatar);
     }
 
     private void setupSaveButton() {
@@ -88,6 +109,15 @@ public class EditUserActivity extends AppCompatActivity {
                 finish();
             }
         });
+    }
+
+    private void setupAvatarClick() {
+        binding.imageViewAvatar.setOnClickListener(v -> openGallery());
+    }
+
+    private void openGallery() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        pickImageLauncher.launch(intent);
     }
 
     private void saveUser() {
@@ -136,13 +166,19 @@ public class EditUserActivity extends AppCompatActivity {
         userViewModel.createUser(currentUser, new UserViewModel.OnUserCreateListener() {
             @Override
             public void onUserCreated() {
-                setResult(RESULT_OK);
-                finish();
+                runOnUiThread(() -> {
+                    Toast.makeText(EditUserActivity.this, "User created successfully", Toast.LENGTH_SHORT).show();
+                    setResult(RESULT_OK);
+                    finish();
+                });
             }
 
             @Override
             public void onError(String error) {
-                showError(error);
+                runOnUiThread(() -> {
+                    showError("Creation failed: " + error);
+                    Log.e("EditUserActivity", "Creation error: " + error);
+                });
             }
         });
     }

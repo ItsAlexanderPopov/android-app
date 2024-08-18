@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class UserViewModel extends AndroidViewModel {
@@ -44,7 +45,7 @@ public class UserViewModel extends AndroidViewModel {
                 List<User> currentUsers = users.getValue();
                 if (currentUsers != null) {
                     currentUsers.remove(user);
-                    users.postValue(currentUsers);
+                    users.postValue(new ArrayList<>(currentUsers));
                 }
             }
 
@@ -59,6 +60,14 @@ public class UserViewModel extends AndroidViewModel {
         repository.updateUser(user, new FetchUsers.OnUserUpdateListener() {
             @Override
             public void onUserUpdated(User updatedUser) {
+                List<User> currentUsers = users.getValue();
+                if (currentUsers != null) {
+                    int index = currentUsers.indexOf(user);
+                    if (index != -1) {
+                        currentUsers.set(index, updatedUser);
+                        users.postValue(new ArrayList<>(currentUsers));
+                    }
+                }
                 listener.onUserUpdated();
             }
 
@@ -74,10 +83,11 @@ public class UserViewModel extends AndroidViewModel {
             @Override
             public void onUserCreated(User createdUser) {
                 List<User> currentUsers = users.getValue();
-                if (currentUsers != null) {
-                    currentUsers.add(createdUser);
-                    users.postValue(currentUsers);
+                if (currentUsers == null) {
+                    currentUsers = new ArrayList<>();
                 }
+                currentUsers.add(createdUser);
+                users.postValue(new ArrayList<>(currentUsers));
                 listener.onUserCreated();
             }
 

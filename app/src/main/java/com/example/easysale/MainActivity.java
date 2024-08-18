@@ -34,7 +34,6 @@ public class MainActivity extends AppCompatActivity implements
         setupRecyclerView();
         setupViewModel();
         setupFab();
-        DatabaseUtils.printTableColumns(this, "users");
     }
 
     private void setupRecyclerView() {
