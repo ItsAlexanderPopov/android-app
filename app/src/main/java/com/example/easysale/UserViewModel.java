@@ -51,10 +51,6 @@ public class UserViewModel extends ViewModel {
             }
         });
     }
-    public interface OnUserUpdateListener {
-        void onUserUpdated();
-        void onError(String error);
-    }
 
     public void updateUser(User user, OnUserUpdateListener listener) {
         repository.updateUser(user, new FetchUsers.OnUserUpdateListener() {
@@ -76,5 +72,34 @@ public class UserViewModel extends ViewModel {
                 listener.onError(error);
             }
         });
+    }
+
+    public void createUser(User user, OnUserCreateListener listener) {
+        repository.createUser(user, new FetchUsers.OnUserCreateListener() {
+            @Override
+            public void onUserCreated(User createdUser) {
+                List<User> currentUsers = users.getValue();
+                if (currentUsers != null) {
+                    currentUsers.add(createdUser);
+                    users.setValue(currentUsers);
+                }
+                listener.onUserCreated();
+            }
+
+            @Override
+            public void onError(String error) {
+                listener.onError(error);
+            }
+        });
+    }
+
+    public interface OnUserUpdateListener {
+        void onUserUpdated();
+        void onError(String error);
+    }
+
+    public interface OnUserCreateListener {
+        void onUserCreated();
+        void onError(String error);
     }
 }

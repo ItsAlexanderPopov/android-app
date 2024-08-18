@@ -30,6 +30,11 @@ public class FetchUsers {
         void onError(String error);
     }
 
+    public interface OnUserCreateListener {
+        void onUserCreated(User user);
+        void onError(String error);
+    }
+
     public void getUsers(final OnUsersFetchListener listener) {
         final List<User> allUsers = new ArrayList<>();
         fetchUsersRecursively(1, allUsers, listener);
@@ -95,6 +100,25 @@ public class FetchUsers {
             @Override
             public void onFailure(Call<UserResponse> call, Throwable t) {
                 listener.onError("Error updating user: " + t.getMessage());
+            }
+        });
+    }
+
+    public void createUser(User user, final OnUserCreateListener listener) {
+        apiService.createUser(user).enqueue(new Callback<UserResponse>() {
+            @Override
+            public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    User createdUser = response.body().getData().get(0);
+                    listener.onUserCreated(createdUser);
+                } else {
+                    listener.onError("Error creating user: " + response.message());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UserResponse> call, Throwable t) {
+                listener.onError("Error creating user: " + t.getMessage());
             }
         });
     }

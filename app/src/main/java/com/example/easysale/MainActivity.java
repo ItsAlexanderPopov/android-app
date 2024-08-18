@@ -11,7 +11,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.easysale.databinding.MainActivityBinding;
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity implements UserAdapter.OnDeleteClickListener, UserAdapter.OnItemClickListener {
+public class MainActivity extends AppCompatActivity implements
+        UserAdapter.OnDeleteClickListener, UserAdapter.OnItemClickListener {
     private static final String TAG = "MainActivity";
     private UserViewModel userViewModel;
     private UserAdapter userAdapter;
@@ -32,6 +33,7 @@ public class MainActivity extends AppCompatActivity implements UserAdapter.OnDel
         setContentView(binding.getRoot());
         setupRecyclerView();
         setupViewModel();
+        setupFab();
     }
 
     private void setupRecyclerView() {
@@ -53,6 +55,14 @@ public class MainActivity extends AppCompatActivity implements UserAdapter.OnDel
         userViewModel.loadUsers();
     }
 
+    private void setupFab() {
+        binding.addImageView.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, EditUserActivity.class);
+            intent.putExtra(EditUserActivity.EXTRA_STATE, EditUserActivity.STATE_ADD);
+            editUserLauncher.launch(intent);
+        });
+    }
+
     private void updateUserCount(int count) {
         binding.userCountTextView.setText("Found " + count + " users");
     }
@@ -65,6 +75,7 @@ public class MainActivity extends AppCompatActivity implements UserAdapter.OnDel
     @Override
     public void onItemClick(User user) {
         Intent intent = new Intent(this, EditUserActivity.class);
+        intent.putExtra(EditUserActivity.EXTRA_STATE, EditUserActivity.STATE_EDIT);
         intent.putExtra("USER", user);
         editUserLauncher.launch(intent);
     }
