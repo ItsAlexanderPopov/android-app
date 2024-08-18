@@ -20,6 +20,11 @@ public class FetchUsers {
         void onError(String error);
     }
 
+    public interface OnUserDeleteListener {
+        void onUserDeleted();
+        void onError(String error);
+    }
+
     public void getUsers(final OnUsersFetchListener listener) {
         final List<User> allUsers = new ArrayList<>();
         fetchUsersRecursively(1, allUsers, listener);
@@ -51,6 +56,23 @@ public class FetchUsers {
             public void onFailure(Call<UserResponse> call, Throwable throwable) {
                 Log.e(TAG, "Error fetching page " + page, throwable);
                 listener.onError("Error fetching page " + page + ": " + throwable.getMessage());
+            }
+        });
+    }
+    public void deleteUser(User user, final OnUserDeleteListener listener) {
+        apiService.deleteUser(user.getId()).enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    listener.onUserDeleted();
+                } else {
+                    listener.onError("Error deleting user: " + response.message());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                listener.onError("Error deleting user: " + t.getMessage());
             }
         });
     }

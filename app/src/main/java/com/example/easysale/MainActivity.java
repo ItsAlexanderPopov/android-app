@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.easysale.databinding.MainActivityBinding;
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements UserAdapter.OnDeleteClickListener {
     private static final String TAG = "MainActivity";
     private UserViewModel userViewModel;
     private UserAdapter userAdapter;
@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerView() {
-        userAdapter = new UserAdapter(new ArrayList<>());
+        userAdapter = new UserAdapter(new ArrayList<>(), this);
         binding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerView.setAdapter(userAdapter);
     }
@@ -44,5 +44,10 @@ public class MainActivity extends AppCompatActivity {
 
     private void updateUserCount(int count) {
         binding.userCountTextView.setText("Found " + count + " users");
+    }
+
+    @Override
+    public void onDeleteClick(User user) {
+        userViewModel.deleteUser(user);
     }
 }

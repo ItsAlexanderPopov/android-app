@@ -33,4 +33,22 @@ public class UserViewModel extends ViewModel {
             }
         });
     }
+    public void deleteUser(User user) {
+        repository.deleteUser(user, new FetchUsers.OnUserDeleteListener() {
+            @Override
+            public void onUserDeleted() {
+                List<User> currentUsers = users.getValue();
+                if (currentUsers != null) {
+                    currentUsers.remove(user);
+                    users.setValue(currentUsers);
+                }
+            }
+
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Error deleting user: " + error);
+                // You might want to add some error handling here, e.g., showing a toast
+            }
+        });
+    }
 }

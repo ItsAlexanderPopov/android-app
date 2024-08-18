@@ -14,9 +14,15 @@ import java.util.List;
 
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder> {
     private List<User> users;
+    private OnDeleteClickListener deleteListener;
 
-    public UserAdapter(List<User> users) {
+    public interface OnDeleteClickListener {
+        void onDeleteClick(User user);
+    }
+
+    public UserAdapter(List<User> users, OnDeleteClickListener listener) {
         this.users = users;
+        this.deleteListener = listener;
     }
 
     @NonNull
@@ -35,7 +41,11 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
         // Bind user data to the views in the ViewHolder
         holder.nameTextView.setText(user.getFirstName() + " " + user.getLastName());
         holder.emailTextView.setText(user.getEmail());
-
+        holder.deleteImageView.setOnClickListener(v -> {
+            if (deleteListener != null) {
+                deleteListener.onDeleteClick(user);
+            }
+        });
         // Load the user's avatar image using Glide
         Glide.with(holder.itemView.getContext())
                 .load(user.getAvatar())
