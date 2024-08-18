@@ -4,6 +4,7 @@ import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
+import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
@@ -21,4 +22,8 @@ public interface ApiService {
     // Update user details by ID
     @PUT("api/users/{id}")
     Call<UserResponse> updateUser(@Path("id") int userId, @Body User user);
+
+    // New endpoint for creating a user
+    @POST("api/users")
+    Call<UserResponse> createUser(@Body User user);
 }

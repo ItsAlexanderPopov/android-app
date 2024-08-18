@@ -51,4 +51,30 @@ public class UserViewModel extends ViewModel {
             }
         });
     }
+    public interface OnUserUpdateListener {
+        void onUserUpdated();
+        void onError(String error);
+    }
+
+    public void updateUser(User user, OnUserUpdateListener listener) {
+        repository.updateUser(user, new FetchUsers.OnUserUpdateListener() {
+            @Override
+            public void onUserUpdated(User updatedUser) {
+                List<User> currentUsers = users.getValue();
+                if (currentUsers != null) {
+                    int index = currentUsers.indexOf(user);
+                    if (index != -1) {
+                        currentUsers.set(index, updatedUser);
+                        users.setValue(currentUsers);
+                    }
+                }
+                listener.onUserUpdated();
+            }
+
+            @Override
+            public void onError(String error) {
+                listener.onError(error);
+            }
+        });
+    }
 }

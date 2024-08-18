@@ -25,6 +25,11 @@ public class FetchUsers {
         void onError(String error);
     }
 
+    public interface OnUserUpdateListener {
+        void onUserUpdated(User user);
+        void onError(String error);
+    }
+
     public void getUsers(final OnUsersFetchListener listener) {
         final List<User> allUsers = new ArrayList<>();
         fetchUsersRecursively(1, allUsers, listener);
@@ -73,6 +78,23 @@ public class FetchUsers {
             @Override
             public void onFailure(Call<Void> call, Throwable t) {
                 listener.onError("Error deleting user: " + t.getMessage());
+            }
+        });
+    }
+    public void updateUser(User user, final OnUserUpdateListener listener) {
+        apiService.updateUser(user.getId(), user).enqueue(new Callback<UserResponse>() {
+            @Override
+            public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    listener.onUserUpdated(response.body().getData().get(0));
+                } else {
+                    listener.onError("Error updating user: " + response.message());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<UserResponse> call, Throwable t) {
+                listener.onError("Error updating user: " + t.getMessage());
             }
         });
     }
