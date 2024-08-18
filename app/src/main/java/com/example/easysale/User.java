@@ -1,12 +1,32 @@
 package com.example.easysale;
 
+import android.util.Log;
 import java.io.Serializable;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+import androidx.room.ColumnInfo;
 
+import com.google.gson.annotations.SerializedName;
+
+@Entity(tableName = "users")
 public class User implements Serializable {
+    private static final String TAG = "User";
+
+    @PrimaryKey
     private int id;
+
+    @ColumnInfo(name = "email")
     private String email;
-    private String first_name;
-    private String last_name;
+
+    @SerializedName("first_name")
+    @ColumnInfo(name = "firstName")
+    private String firstName;
+
+    @SerializedName("last_name")
+    @ColumnInfo(name = "lastName")
+    private String lastName;
+
+    @ColumnInfo(name = "avatar")
     private String avatar;
 
     // ID
@@ -18,35 +38,40 @@ public class User implements Serializable {
     }
 
     // Email
-    public String getEmail(){
+    public String getEmail() {
         return email;
     }
-    public void setEmail(String email){
+    public void setEmail(String email) {
         this.email = email;
+        Log.d(TAG, "setEmail: " + email);
     }
 
     // First Name
-    public String getFirstName(){
-        return first_name;
+    public String getFirstName() {
+        Log.d(TAG, "getFirstName: " + firstName);
+        return firstName;
     }
-    public void setFirstName(String first_name){
-        this.first_name = first_name;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+        Log.d(TAG, "setFirstName: " + firstName);
     }
 
     // Last Name
-    public String getLastName(){
-        return last_name;
+    public String getLastName() {
+        Log.d(TAG, "getLastName: " + lastName);
+        return lastName;
     }
-    public void setLastName(String last_name){
-        this.last_name = last_name;
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+        Log.d(TAG, "setLastName: " + lastName);
     }
 
     // Avatar
-    public String getAvatar(){
+    public String getAvatar() {
         return avatar;
     }
-    public void setAvatar(String avatar){
+    public void setAvatar(String avatar) {
         this.avatar = avatar;
+        Log.d(TAG, "setAvatar: " + avatar);
     }
-
 }

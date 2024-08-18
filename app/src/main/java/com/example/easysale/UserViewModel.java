@@ -1,19 +1,22 @@
 package com.example.easysale;
 
+import android.app.Application;
 import android.util.Log;
 
+import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.ViewModel;
+
 import java.util.List;
 
-public class UserViewModel extends ViewModel {
+public class UserViewModel extends AndroidViewModel {
     private static final String TAG = "UserViewModel";
     private FetchUsers repository;
     private MutableLiveData<List<User>> users = new MutableLiveData<>();
 
-    public UserViewModel() {
-        repository = new FetchUsers();
+    public UserViewModel(Application application) {
+        super(application);
+        repository = new FetchUsers(application);
     }
 
     public LiveData<List<User>> getUsers() {
@@ -24,7 +27,7 @@ public class UserViewModel extends ViewModel {
         repository.getUsers(new FetchUsers.OnUsersFetchListener() {
             @Override
             public void onUsersFetched(List<User> fetchedUsers) {
-                users.setValue(fetchedUsers);
+                users.postValue(fetchedUsers);
             }
 
             @Override
@@ -33,6 +36,7 @@ public class UserViewModel extends ViewModel {
             }
         });
     }
+
     public void deleteUser(User user) {
         repository.deleteUser(user, new FetchUsers.OnUserDeleteListener() {
             @Override
@@ -40,14 +44,13 @@ public class UserViewModel extends ViewModel {
                 List<User> currentUsers = users.getValue();
                 if (currentUsers != null) {
                     currentUsers.remove(user);
-                    users.setValue(currentUsers);
+                    users.postValue(currentUsers);
                 }
             }
 
             @Override
             public void onError(String error) {
                 Log.e(TAG, "Error deleting user: " + error);
-                // You might want to add some error handling here, e.g., showing a toast
             }
         });
     }
@@ -56,14 +59,6 @@ public class UserViewModel extends ViewModel {
         repository.updateUser(user, new FetchUsers.OnUserUpdateListener() {
             @Override
             public void onUserUpdated(User updatedUser) {
-                List<User> currentUsers = users.getValue();
-                if (currentUsers != null) {
-                    int index = currentUsers.indexOf(user);
-                    if (index != -1) {
-                        currentUsers.set(index, updatedUser);
-                        users.setValue(currentUsers);
-                    }
-                }
                 listener.onUserUpdated();
             }
 
@@ -81,7 +76,7 @@ public class UserViewModel extends ViewModel {
                 List<User> currentUsers = users.getValue();
                 if (currentUsers != null) {
                     currentUsers.add(createdUser);
-                    users.setValue(currentUsers);
+                    users.postValue(currentUsers);
                 }
                 listener.onUserCreated();
             }

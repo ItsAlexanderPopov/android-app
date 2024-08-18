@@ -1,5 +1,7 @@
 package com.example.easysale;
 
+import android.content.Context;
+import android.os.AsyncTask;
 import android.util.Log;
 import java.util.List;
 import java.util.ArrayList;
@@ -9,10 +11,12 @@ import retrofit2.Response;
 
 public class FetchUsers {
     private final ApiService apiService;
+    private final UserDao userDao;
     private static final String TAG = "FetchUsers";
 
-    public FetchUsers() {
+    public FetchUsers(Context context) {
         apiService = RetrofitClient.getClient().create(ApiService.class);
+        userDao = UserDatabase.getDatabase(context).userDao();
     }
 
     public interface OnUsersFetchListener {
@@ -36,11 +40,21 @@ public class FetchUsers {
     }
 
     public void getUsers(final OnUsersFetchListener listener) {
+        AsyncTask.execute(() -> {
+            List<User> localUsers = userDao.getAllUsers();
+            if (!localUsers.isEmpty()) {
+                listener.onUsersFetched(localUsers);
+            } else {
+                fetchUsersFromApi(listener);
+            }
+        });
+    }
+
+    private void fetchUsersFromApi(final OnUsersFetchListener listener) {
         final List<User> allUsers = new ArrayList<>();
         fetchUsersRecursively(1, allUsers, listener);
     }
 
-    // There are 6 users per page, by default 12. (18/08/2024)
     private void fetchUsersRecursively(final int page, final List<User> allUsers, final OnUsersFetchListener listener) {
         apiService.getUsers(page).enqueue(new Callback<UserResponse>() {
             @Override
@@ -48,32 +62,33 @@ public class FetchUsers {
                 if (response.isSuccessful() && response.body() != null) {
                     List<User> users = response.body().getData();
                     if (users.isEmpty()) {
-                        // No more users to fetch
-                        Log.d(TAG, "All users fetched successfully");
+                        AsyncTask.execute(() -> {
+                            userDao.deleteAll();
+                            userDao.insertAll(allUsers);
+                        });
                         listener.onUsersFetched(allUsers);
                     } else {
                         allUsers.addAll(users);
-                        // Fetch the next page
                         fetchUsersRecursively(page + 1, allUsers, listener);
                     }
                 } else {
-                    Log.e(TAG, "Error fetching page " + page + ": " + response.message());
                     listener.onError("Error fetching page " + page + ": " + response.message());
                 }
             }
 
             @Override
             public void onFailure(Call<UserResponse> call, Throwable throwable) {
-                Log.e(TAG, "Error fetching page " + page, throwable);
                 listener.onError("Error fetching page " + page + ": " + throwable.getMessage());
             }
         });
     }
+
     public void deleteUser(User user, final OnUserDeleteListener listener) {
         apiService.deleteUser(user.getId()).enqueue(new Callback<Void>() {
             @Override
             public void onResponse(Call<Void> call, Response<Void> response) {
                 if (response.isSuccessful()) {
+                    AsyncTask.execute(() -> userDao.delete(user));
                     listener.onUserDeleted();
                 } else {
                     listener.onError("Error deleting user: " + response.message());
@@ -86,12 +101,14 @@ public class FetchUsers {
             }
         });
     }
+
     public void updateUser(User user, final OnUserUpdateListener listener) {
         apiService.updateUser(user.getId(), user).enqueue(new Callback<UserResponse>() {
             @Override
             public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    listener.onUserUpdated(response.body().getData().get(0));
+                if (response.isSuccessful()) {
+                    AsyncTask.execute(() -> userDao.update(user));
+                    listener.onUserUpdated(user);
                 } else {
                     listener.onError("Error updating user: " + response.message());
                 }
@@ -99,6 +116,7 @@ public class FetchUsers {
 
             @Override
             public void onFailure(Call<UserResponse> call, Throwable t) {
+                Log.e("FetchUsers", "Update failed", t);
                 listener.onError("Error updating user: " + t.getMessage());
             }
         });
@@ -108,9 +126,9 @@ public class FetchUsers {
         apiService.createUser(user).enqueue(new Callback<UserResponse>() {
             @Override
             public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    User createdUser = response.body().getData().get(0);
-                    listener.onUserCreated(createdUser);
+                if (response.isSuccessful()) {
+                    AsyncTask.execute(() -> userDao.insert(user));
+                    listener.onUserCreated(user);
                 } else {
                     listener.onError("Error creating user: " + response.message());
                 }

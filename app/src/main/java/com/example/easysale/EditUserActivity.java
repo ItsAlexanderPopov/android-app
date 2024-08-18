@@ -2,6 +2,7 @@ package com.example.easysale;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MenuItem;
 import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
@@ -114,13 +115,19 @@ public class EditUserActivity extends AppCompatActivity {
         userViewModel.updateUser(currentUser, new UserViewModel.OnUserUpdateListener() {
             @Override
             public void onUserUpdated() {
-                setResult(RESULT_OK);
-                finish();
+                runOnUiThread(() -> {
+                    Toast.makeText(EditUserActivity.this, "User updated successfully", Toast.LENGTH_SHORT).show();
+                    setResult(RESULT_OK);
+                    finish();
+                });
             }
 
             @Override
             public void onError(String error) {
-                showError(error);
+                runOnUiThread(() -> {
+                    showError("Update failed: " + error);
+                    Log.e("EditUserActivity", "Update error: " + error);
+                });
             }
         });
     }
