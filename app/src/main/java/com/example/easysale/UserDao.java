@@ -31,4 +31,10 @@ public interface UserDao {
 
     @Query("SELECT MAX(id) FROM users")
     int getMaxUserId();
+
+    @Query("SELECT COUNT(*) FROM users")
+    int getUserCount();
+
+    @Query("SELECT * FROM users LIMIT :limit OFFSET :offset")
+    List<User> getUsersPage(int offset, int limit);
 }

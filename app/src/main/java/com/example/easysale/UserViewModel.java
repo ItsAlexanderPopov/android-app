@@ -14,6 +14,9 @@ public class UserViewModel extends AndroidViewModel {
     private static final String TAG = "UserViewModel";
     private FetchUsers repository;
     private MutableLiveData<List<User>> users = new MutableLiveData<>();
+    private MutableLiveData<Integer> totalPages = new MutableLiveData<>();
+    private int currentPage = 1;
+    private static final int USERS_PER_PAGE = 6;
 
     public UserViewModel(Application application) {
         super(application);
@@ -24,11 +27,22 @@ public class UserViewModel extends AndroidViewModel {
         return users;
     }
 
-    public void loadUsers() {
-        repository.getUsers(new FetchUsers.OnUsersFetchListener() {
+    public LiveData<Integer> getTotalPages() {
+        return totalPages;
+    }
+
+    public int getCurrentPage() {
+        return currentPage;
+    }
+
+    public void loadUsers(int page) {
+        currentPage = page;
+        repository.getUsers(page, USERS_PER_PAGE, new FetchUsers.OnUsersFetchListener() {
             @Override
-            public void onUsersFetched(List<User> fetchedUsers) {
+            public void onUsersFetched(List<User> fetchedUsers, int total) {
                 users.postValue(fetchedUsers);
+                int pages = (total + USERS_PER_PAGE - 1) / USERS_PER_PAGE;
+                totalPages.postValue(pages);
             }
 
             @Override
@@ -37,7 +51,6 @@ public class UserViewModel extends AndroidViewModel {
             }
         });
     }
-
     public void deleteUser(User user) {
         repository.deleteUser(user, new FetchUsers.OnUserDeleteListener() {
             @Override

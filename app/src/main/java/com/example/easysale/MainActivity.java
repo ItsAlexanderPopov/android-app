@@ -3,9 +3,15 @@ package com.example.easysale;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.widget.Button;
+import android.widget.LinearLayout;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.easysale.databinding.MainActivityBinding;
@@ -22,7 +28,7 @@ public class MainActivity extends AppCompatActivity implements
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK) {
-                    userViewModel.loadUsers();
+                    userViewModel.loadUsers(1);
                 }
             });
 
@@ -61,7 +67,47 @@ public class MainActivity extends AppCompatActivity implements
                 Log.e(TAG, "Received null user list");
             }
         });
-        userViewModel.loadUsers();
+        userViewModel.getTotalPages().observe(this, this::updatePagination);
+        userViewModel.loadUsers(1);
+    }
+
+    private void updatePagination(int totalPages) {
+        binding.paginationLayout.removeAllViews();
+        for (int i = 1; i <= totalPages; i++) {
+            Button pageButton = new Button(this);
+            pageButton.setText(String.valueOf(i));
+            pageButton.setTextColor(ContextCompat.getColor(this, android.R.color.black));
+            pageButton.setBackgroundResource(R.drawable.pagination_button);
+
+            final int page = i;
+            pageButton.setOnClickListener(v -> userViewModel.loadUsers(page));
+
+            if (i == userViewModel.getCurrentPage()) {
+                pageButton.setEnabled(false);
+                pageButton.setTextColor(ContextCompat.getColor(this, R.color.colorAccent));
+            }
+
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    dpToPx(40), // Width
+                    dpToPx(40)  // Height
+            );
+            params.setMargins(dpToPx(4), 0, dpToPx(4), 0);
+            pageButton.setLayoutParams(params);
+
+            // Center the text in the button
+            pageButton.setGravity(Gravity.CENTER);
+
+            // Set text size
+            pageButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+
+            binding.paginationLayout.addView(pageButton);
+        }
+    }
+
+    // Helper method to convert dp to pixels
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round((float) dp * density);
     }
 
     private void setupFab() {

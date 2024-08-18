@@ -13,7 +13,7 @@ public interface ApiService {
 
     // Fetch users with pagination
     @GET("api/users")
-    Call<UserResponse> getUsers(@Query("page") int page);
+    Call<UserResponse> getUsers(@Query("page") int page, @Query("per_page") int perPage);
 
     // Delete a user by ID
     @DELETE("api/users/{id}")
