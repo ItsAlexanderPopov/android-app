@@ -123,19 +123,28 @@ public class FetchUsers {
     }
 
     public void createUser(User user, final OnUserCreateListener listener) {
+        Log.d(TAG, "createUser: Attempting to create user: " + user.getFirstName());
         apiService.createUser(user).enqueue(new Callback<UserResponse>() {
             @Override
             public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
                 if (response.isSuccessful()) {
-                    AsyncTask.execute(() -> userDao.insert(user));
-                    listener.onUserCreated(user);
+                    Log.d(TAG, "createUser: API call successful");
+                    AsyncTask.execute(() -> {
+                        int userCount = userDao.getUserCount();
+                        user.setId(userCount);
+                        userDao.insert(user);
+                        Log.d(TAG, "createUser: User inserted into local database with ID: " + user.getId());
+                        listener.onUserCreated(user);
+                    });
                 } else {
+                    Log.e(TAG, "createUser: API call failed: " + response.message());
                     listener.onError("Error creating user: " + response.message());
                 }
             }
 
             @Override
             public void onFailure(Call<UserResponse> call, Throwable t) {
+                Log.e(TAG, "createUser: API call failed", t);
                 listener.onError("Error creating user: " + t.getMessage());
             }
         });
