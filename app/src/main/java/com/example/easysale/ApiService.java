@@ -10,20 +10,19 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 public interface ApiService {
-
     // Fetch users with pagination
     @GET("users")
     Call<UserResponse> getUsers(@Query("page") int page, @Query("per_page") int perPage);
 
     // Delete a user by ID
-    @DELETE("api/users/{id}")
+    @DELETE("users/{id}")
     Call<Void> deleteUser(@Path("id") int userId);
 
     // Update user details by ID
-    @PUT("api/users/{id}")
+    @PUT("users/{id}")
     Call<UserResponse> updateUser(@Path("id") int userId, @Body User user);
 
-    // New endpoint for creating a user
-    @POST("api/users")
+    // Create a new user
+    @POST("users")
     Call<UserResponse> createUser(@Body User user);
 }

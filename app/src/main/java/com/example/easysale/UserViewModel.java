@@ -90,6 +90,12 @@ public class UserViewModel extends AndroidViewModel {
         totalUsers.postValue(total);
         int pages = (total + USERS_PER_PAGE - 1) / USERS_PER_PAGE;
         totalPages.postValue(pages);
+
+        // Ensure current page is valid
+        int currentPageValue = currentPage.getValue() != null ? currentPage.getValue() : 1;
+        if (currentPageValue > pages) {
+            currentPage.postValue(pages);
+        }
     }
 
     public void loadPage(int page) {
@@ -100,15 +106,23 @@ public class UserViewModel extends AndroidViewModel {
         users.postValue(new ArrayList<>(pageUsers));
     }
 
-    public void deleteUser(User user) {
+    public void deleteUserAndReload(User user) {
         repository.deleteUser(user, new FetchUsers.OnUserDeleteListener() {
             @Override
             public void onUserDeleted() {
-                List<User> currentUsers = users.getValue();
-                if (currentUsers != null) {
-                    currentUsers.remove(user);
-                    users.postValue(new ArrayList<>(currentUsers));
-                }
+                // Remove the user from allUsers and filteredUsers
+                allUsers.remove(user);
+                filteredUsers.remove(user);
+
+                // Update pagination
+                updatePagination();
+
+                // Reload the current page
+                int currentPageValue = currentPage.getValue() != null ? currentPage.getValue() : 1;
+                loadPage(currentPageValue);
+
+                // Update total users count
+                totalUsers.postValue(allUsers.size());
             }
 
             @Override
@@ -122,14 +136,19 @@ public class UserViewModel extends AndroidViewModel {
         repository.updateUser(user, new FetchUsers.OnUserUpdateListener() {
             @Override
             public void onUserUpdated(User updatedUser) {
-                List<User> currentUsers = users.getValue();
-                if (currentUsers != null) {
-                    int index = currentUsers.indexOf(user);
-                    if (index != -1) {
-                        currentUsers.set(index, updatedUser);
-                        users.postValue(new ArrayList<>(currentUsers));
-                    }
+                int indexInAll = allUsers.indexOf(user);
+                if (indexInAll != -1) {
+                    allUsers.set(indexInAll, updatedUser);
                 }
+
+                int indexInFiltered = filteredUsers.indexOf(user);
+                if (indexInFiltered != -1) {
+                    filteredUsers.set(indexInFiltered, updatedUser);
+                }
+
+                updatePagination();
+                loadPage(currentPage.getValue() != null ? currentPage.getValue() : 1);
+
                 listener.onUserUpdated();
             }
 
@@ -144,12 +163,12 @@ public class UserViewModel extends AndroidViewModel {
         repository.createUser(user, new FetchUsers.OnUserCreateListener() {
             @Override
             public void onUserCreated(User createdUser) {
-                List<User> currentUsers = users.getValue();
-                if (currentUsers == null) {
-                    currentUsers = new ArrayList<>();
-                }
-                currentUsers.add(createdUser);
-                users.postValue(new ArrayList<>(currentUsers));
+                allUsers.add(0, createdUser);  // Add to the beginning of the list
+                filteredUsers.add(0, createdUser);
+
+                updatePagination();
+                loadPage(1);  // Load the first page to show the newly created user
+
                 listener.onUserCreated();
             }
 

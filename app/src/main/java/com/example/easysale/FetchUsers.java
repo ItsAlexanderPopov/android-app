@@ -8,11 +8,13 @@ import java.util.ArrayList;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import android.content.SharedPreferences;
 
 public class FetchUsers {
     private final ApiService apiService;
     private final UserDao userDao;
     private static final String TAG = "FetchUsers";
+    boolean initialCheckDone = false;
 
     public FetchUsers(Context context) {
         apiService = RetrofitClient.getClient().create(ApiService.class);
@@ -40,14 +42,22 @@ public class FetchUsers {
     }
 
     public void getAllUsers(final OnUsersFetchListener listener) {
-        AsyncTask.execute(() -> {
-            List<User> localUsers = userDao.getAllUsers();
-            if (!localUsers.isEmpty()) {
+        if (!initialCheckDone) {
+            initialCheckDone = true;
+            AsyncTask.execute(() -> {
+                List<User> localUsers = userDao.getAllUsers();
+                if (localUsers.isEmpty()) {
+                    fetchAllUsersFromApi(listener);
+                } else {
+                    listener.onUsersFetched(localUsers, localUsers.size());
+                }
+            });
+        } else {
+            AsyncTask.execute(() -> {
+                List<User> localUsers = userDao.getAllUsers();
                 listener.onUsersFetched(localUsers, localUsers.size());
-            } else {
-                fetchAllUsersFromApi(listener);
-            }
-        });
+            });
+        }
     }
 
     private void fetchAllUsersFromApi(final OnUsersFetchListener listener) {
