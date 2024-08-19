@@ -97,7 +97,7 @@ public class MainActivity extends AppCompatActivity implements
                     dpToPx(44), // Width
                     dpToPx(44)  // Height
             );
-            params.setMargins(dpToPx(8), 0, dpToPx(8), 0);
+            params.setMargins(dpToPx(12), 0, dpToPx(12), 0);
             pageButton.setLayoutParams(params);
 
             pageButton.setGravity(Gravity.CENTER);
@@ -135,7 +135,8 @@ public class MainActivity extends AppCompatActivity implements
         final int finalTargetScrollX = Math.max(0, Math.min(targetScrollX, binding.paginationLayout.getWidth() - binding.paginationScrollView.getWidth()));
 
         // Smooth scroll to the target position
-        binding.paginationScrollView.post(() -> binding.paginationScrollView.smoothScrollTo(finalTargetScrollX, 0));
+        binding.paginationScrollView.postDelayed(() ->
+                binding.paginationScrollView.smoothScrollTo(finalTargetScrollX, 0), 100);
     }
 
     private void setupFab() {
