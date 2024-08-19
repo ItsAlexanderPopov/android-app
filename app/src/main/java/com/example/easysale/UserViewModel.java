@@ -21,7 +21,7 @@ public class UserViewModel extends AndroidViewModel {
     private MutableLiveData<Integer> currentPage = new MutableLiveData<>();
     private static final int USERS_PER_PAGE = 6;
     private List<User> allUsers = new ArrayList<>();
-    private String currentSearchQuery = "";
+    private List<User> filteredUsers = new ArrayList<>();
 
     public UserViewModel(Application application) {
         super(application);
@@ -51,9 +51,9 @@ public class UserViewModel extends AndroidViewModel {
                 allUsers.clear();
                 allUsers.addAll(fetchedUsers);
                 Collections.reverse(allUsers);
+                filteredUsers = new ArrayList<>(allUsers);
                 totalUsers.postValue(total);
-                int pages = (total + USERS_PER_PAGE - 1) / USERS_PER_PAGE;
-                totalPages.postValue(pages);
+                updatePagination();
                 loadPage(1);
             }
 
@@ -65,29 +65,38 @@ public class UserViewModel extends AndroidViewModel {
     }
 
     public void searchUsers(String query) {
-        currentSearchQuery = query.toLowerCase();
-        List<User> filteredUsers = allUsers.stream()
-                .filter(user -> user.getFirstName().toLowerCase().contains(currentSearchQuery) ||
-                        user.getLastName().toLowerCase().contains(currentSearchQuery) ||
-                        user.getEmail().toLowerCase().contains(currentSearchQuery))
+        String lowercaseQuery = query.toLowerCase().trim();
+        Log.d(TAG, "Searching for: " + lowercaseQuery);
+        filteredUsers = allUsers.stream()
+                .filter(user -> {
+                    boolean matches = user.getFirstName().toLowerCase().contains(lowercaseQuery) ||
+                            user.getLastName().toLowerCase().contains(lowercaseQuery) ||
+                            user.getEmail().toLowerCase().contains(lowercaseQuery);
+                    if (matches) {
+                        Log.d(TAG, "Matched user: " + user.getFirstName() + " " + user.getLastName() + " (" + user.getEmail() + ")");
+                    }
+                    return matches;
+                })
                 .collect(Collectors.toList());
 
+        Log.d(TAG, "Found " + filteredUsers.size() + " matching users");
+
+        updatePagination();
+        loadPage(1);
+    }
+
+    private void updatePagination() {
         int total = filteredUsers.size();
         totalUsers.postValue(total);
         int pages = (total + USERS_PER_PAGE - 1) / USERS_PER_PAGE;
         totalPages.postValue(pages);
-        loadPage(1, filteredUsers);
     }
 
     public void loadPage(int page) {
-        loadPage(page, allUsers);
-    }
-
-    private void loadPage(int page, List<User> sourceList) {
         currentPage.postValue(page);
         int start = (page - 1) * USERS_PER_PAGE;
-        int end = Math.min(start + USERS_PER_PAGE, sourceList.size());
-        List<User> pageUsers = sourceList.subList(start, end);
+        int end = Math.min(start + USERS_PER_PAGE, filteredUsers.size());
+        List<User> pageUsers = filteredUsers.subList(start, end);
         users.postValue(new ArrayList<>(pageUsers));
     }
 

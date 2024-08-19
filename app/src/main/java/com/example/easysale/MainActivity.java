@@ -81,11 +81,7 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void afterTextChanged(Editable s) {
                 updateClearIconVisibility(s);
-                if (s.length() > 0) {
-                    userViewModel.searchUsers(s.toString());
-                } else {
-                    userViewModel.loadAllUsers();
-                }
+                userViewModel.searchUsers(s.toString());
             }
         });
 
@@ -95,6 +91,7 @@ public class MainActivity extends AppCompatActivity implements
                 if(binding.searchEditText.getCompoundDrawables()[DRAWABLE_RIGHT] != null &&
                         event.getRawX() >= (binding.searchEditText.getRight() - binding.searchEditText.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width())) {
                     binding.searchEditText.setText("");
+                    userViewModel.loadAllUsers();
                     return true;
                 }
             }
