@@ -255,12 +255,10 @@ public class EditUserActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
             // Hide the keyboard when the back button is pressed
-            KeyboardUtils.hideKeyboard(this);
-            // Delay the back navigation slightly to ensure keyboard is hidden
+            KeyboardUtils.hideKeyboard(this);  // Delay the back navigation slightly to ensure keyboard is hidden
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 getOnBackPressedDispatcher().onBackPressed();
-            }, 100);
-            getOnBackPressedDispatcher().onBackPressed();
+            }, 300);
             return true;
         }
         return super.onOptionsItemSelected(item);
