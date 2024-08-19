@@ -10,6 +10,7 @@ import androidx.lifecycle.MutableLiveData;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class UserViewModel extends AndroidViewModel {
     private static final String TAG = "UserViewModel";
@@ -20,6 +21,7 @@ public class UserViewModel extends AndroidViewModel {
     private MutableLiveData<Integer> currentPage = new MutableLiveData<>();
     private static final int USERS_PER_PAGE = 6;
     private List<User> allUsers = new ArrayList<>();
+    private String currentSearchQuery = "";
 
     public UserViewModel(Application application) {
         super(application);
@@ -62,13 +64,31 @@ public class UserViewModel extends AndroidViewModel {
         });
     }
 
+    public void searchUsers(String query) {
+        currentSearchQuery = query.toLowerCase();
+        List<User> filteredUsers = allUsers.stream()
+                .filter(user -> user.getFirstName().toLowerCase().contains(currentSearchQuery) ||
+                        user.getLastName().toLowerCase().contains(currentSearchQuery) ||
+                        user.getEmail().toLowerCase().contains(currentSearchQuery))
+                .collect(Collectors.toList());
+
+        int total = filteredUsers.size();
+        totalUsers.postValue(total);
+        int pages = (total + USERS_PER_PAGE - 1) / USERS_PER_PAGE;
+        totalPages.postValue(pages);
+        loadPage(1, filteredUsers);
+    }
+
     public void loadPage(int page) {
-        Log.d(TAG, "Loading page: " + page);
-        int start = (page - 1) * USERS_PER_PAGE;
-        int end = Math.min(start + USERS_PER_PAGE, allUsers.size());
-        List<User> pageUsers = allUsers.subList(start, end);
-        users.postValue(new ArrayList<>(pageUsers));
+        loadPage(page, allUsers);
+    }
+
+    private void loadPage(int page, List<User> sourceList) {
         currentPage.postValue(page);
+        int start = (page - 1) * USERS_PER_PAGE;
+        int end = Math.min(start + USERS_PER_PAGE, sourceList.size());
+        List<User> pageUsers = sourceList.subList(start, end);
+        users.postValue(new ArrayList<>(pageUsers));
     }
 
     public void deleteUser(User user) {

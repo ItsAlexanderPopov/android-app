@@ -1,11 +1,15 @@
 package com.example.easysale;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
 
@@ -30,6 +34,15 @@ public class MainActivity extends AppCompatActivity implements
             result -> {
                 if (result.getResultCode() == RESULT_OK) {
                     userViewModel.loadAllUsers();
+                    // Empty the searchbar after editing/adding a user
+                    binding.searchEditText.setText("");
+                    // Clear focus from the search EditText
+                    binding.searchEditText.clearFocus();
+                    // Hide the keyboard if it's open
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    if (imm != null) {
+                        imm.hideSoftInputFromWindow(binding.searchEditText.getWindowToken(), 0);
+                    }
                 }
             });
 
@@ -42,6 +55,7 @@ public class MainActivity extends AppCompatActivity implements
         setupViewModel();
         setupFab();
         setupToolbar();
+        setupSearchBar();
     }
 
     private void setupToolbar() {
@@ -50,6 +64,21 @@ public class MainActivity extends AppCompatActivity implements
             getSupportActionBar().setDisplayHomeAsUpEnabled(false);
             getSupportActionBar().setTitle("EasySale");
         }
+    }
+
+    private void setupSearchBar() {
+        binding.searchEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                userViewModel.searchUsers(s.toString());
+            }
+        });
     }
 
     private void setupRecyclerView() {
