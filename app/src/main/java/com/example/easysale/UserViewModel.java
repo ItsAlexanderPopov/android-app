@@ -22,6 +22,7 @@ public class UserViewModel extends AndroidViewModel {
     private static final int USERS_PER_PAGE = 6;
     private List<User> allUsers = new ArrayList<>();
     private List<User> filteredUsers = new ArrayList<>();
+    private String currentSearchQuery = "";
 
     public UserViewModel(Application application) {
         super(application);
@@ -45,6 +46,7 @@ public class UserViewModel extends AndroidViewModel {
     }
 
     public void loadAllUsers() {
+        currentSearchQuery = "";
         repository.getAllUsers(new FetchUsers.OnUsersFetchListener() {
             @Override
             public void onUsersFetched(List<User> fetchedUsers, int total) {
@@ -65,25 +67,24 @@ public class UserViewModel extends AndroidViewModel {
     }
 
     public void searchUsers(String query) {
+        currentSearchQuery = query;
         String lowercaseQuery = query.toLowerCase().trim();
         Log.d(TAG, "Searching for: " + lowercaseQuery);
-        filteredUsers = allUsers.stream()
-                .filter(user -> {
-                    boolean matches = user.getFirstName().toLowerCase().contains(lowercaseQuery) ||
-                            user.getLastName().toLowerCase().contains(lowercaseQuery) ||
-                            user.getEmail().toLowerCase().contains(lowercaseQuery);
-                    if (matches) {
-                        Log.d(TAG, "Matched user: " + user.getFirstName() + " " + user.getLastName() + " (" + user.getEmail() + ")");
-                    }
-                    return matches;
-                })
-                .collect(Collectors.toList());
 
+        List<User> searchResult = new ArrayList<>();
+        for (User user : allUsers) {
+            if (user.getFirstName().toLowerCase().contains(lowercaseQuery) ||
+                    user.getLastName().toLowerCase().contains(lowercaseQuery) ||
+                    user.getEmail().toLowerCase().contains(lowercaseQuery)) {
+                searchResult.add(user);
+            }
+        }
+        filteredUsers = searchResult;
         Log.d(TAG, "Found " + filteredUsers.size() + " matching users");
-
         updatePagination();
         loadPage(1);
     }
+
 
     private void updatePagination() {
         int total = filteredUsers.size();
@@ -99,6 +100,15 @@ public class UserViewModel extends AndroidViewModel {
     }
 
     public void loadPage(int page) {
+        Integer totalPagesValue = totalPages.getValue();
+        if (totalPagesValue == null) {
+            totalPagesValue = 1; // Default to 1 if null
+        }
+
+        if (page < 1 || page > totalPagesValue) {
+            return; // Invalid page number
+        }
+
         currentPage.postValue(page);
         int start = (page - 1) * USERS_PER_PAGE;
         int end = Math.min(start + USERS_PER_PAGE, filteredUsers.size());

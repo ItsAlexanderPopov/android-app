@@ -18,6 +18,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.core.widget.TextViewCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.easysale.databinding.MainActivityBinding;
@@ -29,17 +30,16 @@ public class MainActivity extends AppCompatActivity implements
     private UserViewModel userViewModel;
     private UserAdapter userAdapter;
     private MainActivityBinding binding;
+    private boolean isReloadingAfterEdit = false;
 
     private final ActivityResultLauncher<Intent> editUserLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK) {
+                    isReloadingAfterEdit = true;
                     userViewModel.loadAllUsers();
-                    // Empty the searchbar after editing/adding a user
                     binding.searchEditText.setText("");
-                    // Clear focus from the search EditText
                     binding.searchEditText.clearFocus();
-                    // Hide the keyboard if it's open
                     InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                     if (imm != null) {
                         imm.hideSoftInputFromWindow(binding.searchEditText.getWindowToken(), 0);
@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity implements
         setupFab();
         setupToolbar();
         setupSearchBar();
+        setupSwipeGesture();
     }
 
     private void setupToolbar() {
@@ -81,7 +82,11 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void afterTextChanged(Editable s) {
                 updateClearIconVisibility(s);
-                userViewModel.searchUsers(s.toString());
+                if (!isReloadingAfterEdit) {
+                    userViewModel.searchUsers(s.toString());
+                } else {
+                    isReloadingAfterEdit = false;
+                }
             }
         });
 
@@ -105,6 +110,27 @@ public class MainActivity extends AppCompatActivity implements
         } else {
             binding.searchEditText.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
         }
+    }
+
+    private void setupSwipeGesture() {
+        binding.recyclerView.setOnTouchListener(new OnSwipeTouchListener(this) {
+            @Override
+            public void onSwipeLeft() {
+                Integer currentPage = userViewModel.getCurrentPage().getValue();
+                Integer totalPages = userViewModel.getTotalPages().getValue();
+                if (currentPage != null && totalPages != null && currentPage < totalPages) {
+                    userViewModel.loadPage(currentPage + 1);
+                }
+            }
+
+            @Override
+            public void onSwipeRight() {
+                Integer currentPage = userViewModel.getCurrentPage().getValue();
+                if (currentPage != null && currentPage > 1) {
+                    userViewModel.loadPage(currentPage - 1);
+                }
+            }
+        });
     }
 
     private void setupRecyclerView() {
@@ -149,14 +175,25 @@ public class MainActivity extends AppCompatActivity implements
             });
 
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                    dpToPx(44), // Width
-                    dpToPx(44)  // Height
+                    dpToPx(36), // Width
+                    dpToPx(36)  // Height
             );
-            params.setMargins(dpToPx(12), 0, dpToPx(12), 0);
+            params.setMargins(dpToPx(4), 0, dpToPx(4), 0);
             pageButton.setLayoutParams(params);
 
             pageButton.setGravity(Gravity.CENTER);
-            pageButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
+            pageButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+            pageButton.setIncludeFontPadding(false);
+            pageButton.setPadding(0, 0, 0, 0);
+
+            // Use TextViewCompat to auto-size text
+            TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(
+                    pageButton,
+                    8, // Minimum text size
+                    14, // Maximum text size
+                    1, // Step granularity
+                    TypedValue.COMPLEX_UNIT_SP
+            );
 
             binding.paginationLayout.addView(pageButton);
         }
@@ -176,7 +213,7 @@ public class MainActivity extends AppCompatActivity implements
                 int page = Integer.parseInt(pageButton.getText().toString());
                 if (page == currentPage) {
                     pageButton.setEnabled(false);
-                    pageButton.setTextColor(ContextCompat.getColor(this, R.color.colorAccent));
+                    pageButton.setTextColor(ContextCompat.getColor(this, R.color.light));
                     targetScrollX = totalWidth - (binding.paginationScrollView.getWidth() - buttonWidth) / 2;
                 } else {
                     pageButton.setEnabled(true);

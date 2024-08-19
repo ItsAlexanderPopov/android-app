@@ -55,7 +55,7 @@
             android:layout_gravity="end|top"
             android:src="@android:drawable/ic_delete"
             android:padding="8dp"
-            app:tint="@color/colorPrimary" />
+            app:tint="@color/gray" />
 
     </FrameLayout>
 
