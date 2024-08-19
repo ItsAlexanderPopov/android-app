@@ -73,6 +73,12 @@ public class MainActivity extends AppCompatActivity implements
         userViewModel.loadAllUsers();
     }
 
+    // Helper method to convert dp to pixels
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round((float) dp * density);
+    }
+
     private void updatePagination(int totalPages) {
         binding.paginationLayout.removeAllViews();
         for (int i = 1; i <= totalPages; i++) {
@@ -88,21 +94,26 @@ public class MainActivity extends AppCompatActivity implements
             });
 
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                    dpToPx(40), // Width
-                    dpToPx(40)  // Height
+                    dpToPx(44), // Width
+                    dpToPx(44)  // Height
             );
-            params.setMargins(dpToPx(4), 0, dpToPx(4), 0);
+            params.setMargins(dpToPx(8), 0, dpToPx(8), 0);
             pageButton.setLayoutParams(params);
 
             pageButton.setGravity(Gravity.CENTER);
-            pageButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+            pageButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18);
 
             binding.paginationLayout.addView(pageButton);
         }
     }
 
+    // Controls pagination buttons colors and scroll movement based on current page
     private void updatePaginationButtonStates(int currentPage) {
         Log.d(TAG, "Updating pagination button states. Current page: " + currentPage);
+        int totalWidth = 0;
+        int targetScrollX = 0;
+        int buttonWidth = dpToPx(44 + 16); // button width + margins
+
         for (int i = 0; i < binding.paginationLayout.getChildCount(); i++) {
             View view = binding.paginationLayout.getChildAt(i);
             if (view instanceof Button) {
@@ -111,18 +122,20 @@ public class MainActivity extends AppCompatActivity implements
                 if (page == currentPage) {
                     pageButton.setEnabled(false);
                     pageButton.setTextColor(ContextCompat.getColor(this, R.color.colorAccent));
+                    targetScrollX = totalWidth - (binding.paginationScrollView.getWidth() - buttonWidth) / 2;
                 } else {
                     pageButton.setEnabled(true);
                     pageButton.setTextColor(ContextCompat.getColor(this, android.R.color.black));
                 }
+                totalWidth += buttonWidth;
             }
         }
-    }
 
-    // Helper method to convert dp to pixels
-    private int dpToPx(int dp) {
-        float density = getResources().getDisplayMetrics().density;
-        return Math.round((float) dp * density);
+        // Ensure targetScrollX is within bounds
+        final int finalTargetScrollX = Math.max(0, Math.min(targetScrollX, binding.paginationLayout.getWidth() - binding.paginationScrollView.getWidth()));
+
+        // Smooth scroll to the target position
+        binding.paginationScrollView.post(() -> binding.paginationScrollView.smoothScrollTo(finalTargetScrollX, 0));
     }
 
     private void setupFab() {
