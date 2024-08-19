@@ -46,6 +46,8 @@
         android:hint="Search users"
         android:inputType="text"
         android:imeOptions="actionDone"
+        android:drawableEnd="@android:drawable/ic_delete"
+        android:drawableTint="@color/colorPrimary"
         app:layout_constraintTop_toBottomOf="@id/userCountTextView"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>

@@ -8,6 +8,7 @@ import android.text.TextWatcher;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
@@ -67,6 +68,9 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void setupSearchBar() {
+        // Initially hide the clear icon
+        updateClearIconVisibility(binding.searchEditText.getText());
+
         binding.searchEditText.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -76,9 +80,34 @@ public class MainActivity extends AppCompatActivity implements
 
             @Override
             public void afterTextChanged(Editable s) {
-                userViewModel.searchUsers(s.toString());
+                updateClearIconVisibility(s);
+                if (s.length() > 0) {
+                    userViewModel.searchUsers(s.toString());
+                } else {
+                    userViewModel.loadAllUsers();
+                }
             }
         });
+
+        binding.searchEditText.setOnTouchListener((v, event) -> {
+            final int DRAWABLE_RIGHT = 2;
+            if(event.getAction() == MotionEvent.ACTION_UP) {
+                if(binding.searchEditText.getCompoundDrawables()[DRAWABLE_RIGHT] != null &&
+                        event.getRawX() >= (binding.searchEditText.getRight() - binding.searchEditText.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width())) {
+                    binding.searchEditText.setText("");
+                    return true;
+                }
+            }
+            return false;
+        });
+    }
+
+    private void updateClearIconVisibility(CharSequence s) {
+        if (s.length() > 0) {
+            binding.searchEditText.setCompoundDrawablesWithIntrinsicBounds(0, 0, android.R.drawable.ic_delete, 0);
+        } else {
+            binding.searchEditText.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
+        }
     }
 
     private void setupRecyclerView() {
