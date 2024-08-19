@@ -121,12 +121,11 @@ public class EditUserActivity extends AppCompatActivity {
     }
 
     private void saveUser() {
-        String firstName = binding.editTextFirstName.getText().toString();
-        String lastName = binding.editTextLastName.getText().toString();
-        String email = binding.editTextEmail.getText().toString();
-
-        if (firstName.isEmpty() || lastName.isEmpty() || email.isEmpty()) {
-            showError("All fields are required");
+        // Cleans strings from common mistakes and then validates
+        String firstName = cleanName(binding.editTextFirstName.getText().toString());
+        String lastName = cleanName(binding.editTextLastName.getText().toString());
+        String email = binding.editTextEmail.getText().toString().trim();
+        if (!validateInputs(firstName, lastName, email)) {
             return;
         }
 
@@ -139,6 +138,60 @@ public class EditUserActivity extends AppCompatActivity {
         } else if (STATE_ADD.equals(state)) {
             createUser();
         }
+    }
+
+    private String cleanName(String name) {
+        // Remove leading and trailing spaces, then replace multiple spaces with a single space
+        return name.trim().replaceAll("\\s+", " ");
+    }
+
+    private boolean validateInputs(String firstName, String lastName, String email) {
+        boolean isValid = true;
+        // Disclaimer: after research, people can have special characters and numbers in their name.
+        if (firstName.isEmpty()) {
+            binding.editTextFirstName.setError("First name is required");
+            isValid = false;
+        } else if (firstName.length() < 2) {
+            binding.editTextFirstName.setError("First name must be at least 2 characters long");
+            isValid = false;
+        } else if (firstName.length() > 35) {
+            binding.editTextFirstName.setError("First name must not exceed 35 characters");
+            isValid = false;
+        } else {
+            binding.editTextFirstName.setError(null);
+            binding.editTextFirstName.setText(firstName);
+        }
+
+        if (lastName.isEmpty()) {
+            binding.editTextLastName.setError("Last name is required");
+            isValid = false;
+        } else if (lastName.length() < 2) {
+            binding.editTextLastName.setError("Last name must be at least 2 characters long");
+            isValid = false;
+        } else if (lastName.length() > 35) {
+            binding.editTextLastName.setError("Last name must not exceed 35 characters");
+            isValid = false;
+        } else {
+            binding.editTextLastName.setError(null);
+            binding.editTextLastName.setText(lastName);
+        }
+
+        if (email.isEmpty()) {
+            binding.editTextEmail.setError("Email is required");
+            isValid = false;
+        } else if (!isValidEmail(email)) {
+            binding.editTextEmail.setError("Invalid email format");
+            isValid = false;
+        } else {
+            binding.editTextEmail.setError(null);
+        }
+
+        return isValid;
+    }
+
+    private boolean isValidEmail(String email) {
+        String emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+";
+        return email.matches(emailPattern);
     }
 
     private void updateUser() {
@@ -182,6 +235,7 @@ public class EditUserActivity extends AppCompatActivity {
             }
         });
     }
+
 
     private void showError(String error) {
         Toast.makeText(this, error, Toast.LENGTH_SHORT).show();
