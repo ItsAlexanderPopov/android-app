@@ -12,11 +12,13 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.content.ContextCompat;
 import androidx.core.widget.TextViewCompat;
 import androidx.lifecycle.ViewModelProvider;
@@ -68,7 +70,19 @@ public class MainActivity extends AppCompatActivity implements
         setSupportActionBar(binding.toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-            getSupportActionBar().setTitle("EasySale");
+            getSupportActionBar().setDisplayShowTitleEnabled(false); // Disable default title
+
+            // Create an ImageView for the logo
+            ImageView logo = new ImageView(this);
+            logo.setImageResource(R.drawable.logo); // Set your logo drawable here
+            Toolbar.LayoutParams params = new Toolbar.LayoutParams(
+                    Toolbar.LayoutParams.WRAP_CONTENT,
+                    Toolbar.LayoutParams.WRAP_CONTENT
+            );
+            logo.setLayoutParams(params);
+
+            // Add the ImageView to the toolbar
+            binding.toolbar.addView(logo);
         }
     }
 
@@ -251,6 +265,8 @@ public class MainActivity extends AppCompatActivity implements
 
     private void setupFab() {
         binding.addImageView.setOnClickListener(v -> {
+            // Hide the keyboard
+            KeyboardUtils.hideKeyboard(this);
             Intent intent = new Intent(MainActivity.this, EditUserActivity.class);
             intent.putExtra(EditUserActivity.EXTRA_STATE, EditUserActivity.STATE_ADD);
             editUserLauncher.launch(intent);
@@ -278,6 +294,8 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onItemClick(User user) {
+        // Hide the keyboard
+        KeyboardUtils.hideKeyboard(this);
         Intent intent = new Intent(this, EditUserActivity.class);
         intent.putExtra(EditUserActivity.EXTRA_STATE, EditUserActivity.STATE_EDIT);
         intent.putExtra("USER", user);

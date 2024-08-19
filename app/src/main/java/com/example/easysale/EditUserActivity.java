@@ -3,6 +3,8 @@ package com.example.easysale;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.MenuItem;
@@ -130,6 +132,9 @@ public class EditUserActivity extends AppCompatActivity {
             return;
         }
 
+        // Hide the keyboard
+        KeyboardUtils.hideKeyboard(this);
+
         currentUser.setFirstName(firstName);
         currentUser.setLastName(lastName);
         currentUser.setEmail(email);
@@ -249,6 +254,12 @@ public class EditUserActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
+            // Hide the keyboard when the back button is pressed
+            KeyboardUtils.hideKeyboard(this);
+            // Delay the back navigation slightly to ensure keyboard is hidden
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                getOnBackPressedDispatcher().onBackPressed();
+            }, 100);
             getOnBackPressedDispatcher().onBackPressed();
             return true;
         }
