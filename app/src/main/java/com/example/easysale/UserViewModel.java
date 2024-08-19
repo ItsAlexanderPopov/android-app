@@ -8,6 +8,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class UserViewModel extends AndroidViewModel {
@@ -15,8 +16,10 @@ public class UserViewModel extends AndroidViewModel {
     private FetchUsers repository;
     private MutableLiveData<List<User>> users = new MutableLiveData<>();
     private MutableLiveData<Integer> totalPages = new MutableLiveData<>();
-    private int currentPage = 1;
+    private MutableLiveData<Integer> totalUsers = new MutableLiveData<>();
+    private MutableLiveData<Integer> currentPage = new MutableLiveData<>();
     private static final int USERS_PER_PAGE = 6;
+    private List<User> allUsers = new ArrayList<>();
 
     public UserViewModel(Application application) {
         super(application);
@@ -31,18 +34,25 @@ public class UserViewModel extends AndroidViewModel {
         return totalPages;
     }
 
-    public int getCurrentPage() {
+    public LiveData<Integer> getTotalUsers() {
+        return totalUsers;
+    }
+
+    public LiveData<Integer> getCurrentPage() {
         return currentPage;
     }
 
-    public void loadUsers(int page) {
-        currentPage = page;
-        repository.getUsers(page, USERS_PER_PAGE, new FetchUsers.OnUsersFetchListener() {
+    public void loadAllUsers() {
+        repository.getAllUsers(new FetchUsers.OnUsersFetchListener() {
             @Override
             public void onUsersFetched(List<User> fetchedUsers, int total) {
-                users.postValue(fetchedUsers);
+                allUsers.clear();
+                allUsers.addAll(fetchedUsers);
+                Collections.reverse(allUsers);
+                totalUsers.postValue(total);
                 int pages = (total + USERS_PER_PAGE - 1) / USERS_PER_PAGE;
                 totalPages.postValue(pages);
+                loadPage(1);
             }
 
             @Override
@@ -51,6 +61,16 @@ public class UserViewModel extends AndroidViewModel {
             }
         });
     }
+
+    public void loadPage(int page) {
+        Log.d(TAG, "Loading page: " + page);
+        int start = (page - 1) * USERS_PER_PAGE;
+        int end = Math.min(start + USERS_PER_PAGE, allUsers.size());
+        List<User> pageUsers = allUsers.subList(start, end);
+        users.postValue(new ArrayList<>(pageUsers));
+        currentPage.postValue(page);
+    }
+
     public void deleteUser(User user) {
         repository.deleteUser(user, new FetchUsers.OnUserDeleteListener() {
             @Override

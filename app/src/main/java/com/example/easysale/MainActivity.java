@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 
@@ -28,7 +29,7 @@ public class MainActivity extends AppCompatActivity implements
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == RESULT_OK) {
-                    userViewModel.loadUsers(1);
+                    userViewModel.loadAllUsers();
                 }
             });
 
@@ -62,13 +63,14 @@ public class MainActivity extends AppCompatActivity implements
         userViewModel.getUsers().observe(this, users -> {
             if (users != null) {
                 userAdapter.setUsers(users);
-                updateUserCount(users.size());
             } else {
                 Log.e(TAG, "Received null user list");
             }
         });
+        userViewModel.getTotalUsers().observe(this, this::updateUserCount);
         userViewModel.getTotalPages().observe(this, this::updatePagination);
-        userViewModel.loadUsers(1);
+        userViewModel.getCurrentPage().observe(this, this::updatePaginationButtonStates);
+        userViewModel.loadAllUsers();
     }
 
     private void updatePagination(int totalPages) {
@@ -80,12 +82,10 @@ public class MainActivity extends AppCompatActivity implements
             pageButton.setBackgroundResource(R.drawable.pagination_button);
 
             final int page = i;
-            pageButton.setOnClickListener(v -> userViewModel.loadUsers(page));
-
-            if (i == userViewModel.getCurrentPage()) {
-                pageButton.setEnabled(false);
-                pageButton.setTextColor(ContextCompat.getColor(this, R.color.colorAccent));
-            }
+            pageButton.setOnClickListener(v -> {
+                userViewModel.loadPage(page);
+                Log.d(TAG, "Page button clicked: " + page);
+            });
 
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                     dpToPx(40), // Width
@@ -94,13 +94,28 @@ public class MainActivity extends AppCompatActivity implements
             params.setMargins(dpToPx(4), 0, dpToPx(4), 0);
             pageButton.setLayoutParams(params);
 
-            // Center the text in the button
             pageButton.setGravity(Gravity.CENTER);
-
-            // Set text size
             pageButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
 
             binding.paginationLayout.addView(pageButton);
+        }
+    }
+
+    private void updatePaginationButtonStates(int currentPage) {
+        Log.d(TAG, "Updating pagination button states. Current page: " + currentPage);
+        for (int i = 0; i < binding.paginationLayout.getChildCount(); i++) {
+            View view = binding.paginationLayout.getChildAt(i);
+            if (view instanceof Button) {
+                Button pageButton = (Button) view;
+                int page = Integer.parseInt(pageButton.getText().toString());
+                if (page == currentPage) {
+                    pageButton.setEnabled(false);
+                    pageButton.setTextColor(ContextCompat.getColor(this, R.color.colorAccent));
+                } else {
+                    pageButton.setEnabled(true);
+                    pageButton.setTextColor(ContextCompat.getColor(this, android.R.color.black));
+                }
+            }
         }
     }
 

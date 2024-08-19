@@ -10,7 +10,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Collections;
 
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder> {
     private List<User> users;
@@ -27,7 +26,6 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
 
     public UserAdapter(List<User> users, OnDeleteClickListener deleteListener, OnItemClickListener itemClickListener) {
         this.users = new ArrayList<>(users);
-        Collections.reverse(this.users);
         this.deleteListener = deleteListener;
         this.itemClickListener = itemClickListener;
     }
@@ -67,8 +65,6 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
 
     public void setUsers(List<User> users) {
         this.users = new ArrayList<>(users);
-        // Reverse the list to show the latest users first
-        Collections.reverse(this.users);
         notifyDataSetChanged();
     }
 

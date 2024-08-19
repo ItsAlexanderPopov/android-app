@@ -12,7 +12,7 @@ import retrofit2.http.Query;
 public interface ApiService {
 
     // Fetch users with pagination
-    @GET("api/users")
+    @GET("users")
     Call<UserResponse> getUsers(@Query("page") int page, @Query("per_page") int perPage);
 
     // Delete a user by ID
