@@ -16,6 +16,7 @@ import com.bumptech.glide.Glide;
 import com.example.easysale.databinding.ActivityEditUserBinding;
 
 public class EditUserActivity extends AppCompatActivity {
+    private static final String TAG = "EditUserActivity";
     private ActivityEditUserBinding binding;
     private UserViewModel userViewModel;
     private User currentUser;
@@ -195,12 +196,16 @@ public class EditUserActivity extends AppCompatActivity {
     }
 
     private void updateUser() {
+        Log.d(TAG, "Updating user: " + currentUser.toString());
         userViewModel.updateUser(currentUser, new UserViewModel.OnUserUpdateListener() {
             @Override
             public void onUserUpdated() {
                 runOnUiThread(() -> {
+                    Log.d(TAG, "User updated successfully. Sending result back.");
                     Toast.makeText(EditUserActivity.this, "User updated successfully", Toast.LENGTH_SHORT).show();
-                    setResult(RESULT_OK);
+                    Intent resultIntent = new Intent();
+                    resultIntent.putExtra("UPDATED_USER", currentUser);
+                    setResult(RESULT_OK, resultIntent);
                     finish();
                 });
             }
@@ -208,8 +213,8 @@ public class EditUserActivity extends AppCompatActivity {
             @Override
             public void onError(String error) {
                 runOnUiThread(() -> {
+                    Log.e(TAG, "Update error: " + error);
                     showError("Update failed: " + error);
-                    Log.e("EditUserActivity", "Update error: " + error);
                 });
             }
         });

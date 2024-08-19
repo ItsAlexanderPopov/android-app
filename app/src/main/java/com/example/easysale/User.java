@@ -48,22 +48,18 @@ public class User implements Serializable {
 
     // First Name
     public String getFirstName() {
-        Log.d(TAG, "getFirstName: " + firstName);
         return firstName;
     }
     public void setFirstName(String firstName) {
         this.firstName = firstName;
-        Log.d(TAG, "setFirstName: " + firstName);
     }
 
     // Last Name
     public String getLastName() {
-        Log.d(TAG, "getLastName: " + lastName);
         return lastName;
     }
     public void setLastName(String lastName) {
         this.lastName = lastName;
-        Log.d(TAG, "setLastName: " + lastName);
     }
 
     // Avatar
@@ -72,6 +68,5 @@ public class User implements Serializable {
     }
     public void setAvatar(String avatar) {
         this.avatar = avatar;
-        Log.d(TAG, "setAvatar: " + avatar);
     }
 }

@@ -30,20 +30,24 @@ public class MainActivity extends AppCompatActivity implements
     private UserViewModel userViewModel;
     private UserAdapter userAdapter;
     private MainActivityBinding binding;
-    private boolean isReloadingAfterEdit = false;
 
     private final ActivityResultLauncher<Intent> editUserLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
+                Log.d(TAG, "Received result from EditUserActivity. Result code: " + result.getResultCode());
                 if (result.getResultCode() == RESULT_OK) {
-                    isReloadingAfterEdit = true;
-                    userViewModel.loadAllUsers();
-                    binding.searchEditText.setText("");
-                    binding.searchEditText.clearFocus();
-                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                    if (imm != null) {
-                        imm.hideSoftInputFromWindow(binding.searchEditText.getWindowToken(), 0);
+                    Intent data = result.getData();
+                    if (data != null && data.hasExtra("UPDATED_USER")) {
+                        User updatedUser = (User) data.getSerializableExtra("UPDATED_USER");
+                        Log.d(TAG, "Received updated user: " + updatedUser.toString());
+                        userViewModel.updateLocalUser(updatedUser);
+                    } else {
+                        Log.d(TAG, "No updated user data received. Loading all users.");
+                        userViewModel.loadAllUsers();
                     }
+                    // Don't clear the search bar or reset focus here
+                } else {
+                    Log.d(TAG, "EditUserActivity did not return RESULT_OK");
                 }
             });
 
@@ -69,7 +73,6 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void setupSearchBar() {
-        // Initially hide the clear icon
         updateClearIconVisibility(binding.searchEditText.getText());
 
         binding.searchEditText.addTextChangedListener(new TextWatcher() {
@@ -82,10 +85,10 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void afterTextChanged(Editable s) {
                 updateClearIconVisibility(s);
-                if (!isReloadingAfterEdit) {
-                    userViewModel.searchUsers(s.toString());
+                if (s.toString().isEmpty()) {
+                    userViewModel.loadAllUsers();  // This will reset to page 1
                 } else {
-                    isReloadingAfterEdit = false;
+                    userViewModel.searchUsers(s.toString());
                 }
             }
         });
@@ -150,17 +153,23 @@ public class MainActivity extends AppCompatActivity implements
         });
         userViewModel.getTotalUsers().observe(this, this::updateUserCount);
         userViewModel.getTotalPages().observe(this, this::updatePagination);
-        userViewModel.getCurrentPage().observe(this, this::updatePaginationButtonStates);
+        userViewModel.getSelectedPage().observe(this, this::updatePaginationButtonStates);
+        userViewModel.getPaginationUpdated().observe(this, updated -> {
+            if (updated) {
+                updatePagination(userViewModel.getTotalPages().getValue());
+                updatePaginationButtonStates(userViewModel.getSelectedPage().getValue());
+            }
+        });
         userViewModel.loadAllUsers();
     }
 
-    // Helper method to convert dp to pixels
     private int dpToPx(int dp) {
         float density = getResources().getDisplayMetrics().density;
         return Math.round((float) dp * density);
     }
 
-    private void updatePagination(int totalPages) {
+    private void updatePagination(Integer totalPages) {
+        if (totalPages == null) return;
         binding.paginationLayout.removeAllViews();
         for (int i = 1; i <= totalPages; i++) {
             Button pageButton = new Button(this);
@@ -186,7 +195,6 @@ public class MainActivity extends AppCompatActivity implements
             pageButton.setIncludeFontPadding(false);
             pageButton.setPadding(0, 0, 0, 0);
 
-            // Use TextViewCompat to auto-size text
             TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(
                     pageButton,
                     8, // Minimum text size
@@ -197,14 +205,23 @@ public class MainActivity extends AppCompatActivity implements
 
             binding.paginationLayout.addView(pageButton);
         }
+        updatePaginationButtonStates(userViewModel.getSelectedPage().getValue());
     }
 
-    // Controls pagination buttons colors and scroll movement based on current page
-    private void updatePaginationButtonStates(int currentPage) {
+    private void updatePaginationButtonStates(Integer currentPage) {
+        if (currentPage == null) return;
         Log.d(TAG, "Updating pagination button states. Current page: " + currentPage);
+
+        int totalPages = binding.paginationLayout.getChildCount();
+        if (currentPage < 1 || currentPage > totalPages) {
+            Log.e(TAG, "Invalid current page: " + currentPage + ". Total pages: " + totalPages);
+            userViewModel.loadPage(1);
+            return;
+        }
+
         int totalWidth = 0;
         int targetScrollX = 0;
-        int buttonWidth = dpToPx(44 + 16); // button width + margins
+        int buttonWidth = dpToPx(36 + 8); // button width (36dp) + margins (4dp on each side)
 
         for (int i = 0; i < binding.paginationLayout.getChildCount(); i++) {
             View view = binding.paginationLayout.getChildAt(i);
@@ -214,21 +231,22 @@ public class MainActivity extends AppCompatActivity implements
                 if (page == currentPage) {
                     pageButton.setEnabled(false);
                     pageButton.setTextColor(ContextCompat.getColor(this, R.color.light));
+                    pageButton.setBackgroundResource(R.drawable.pagination_button_selected);
                     targetScrollX = totalWidth - (binding.paginationScrollView.getWidth() - buttonWidth) / 2;
                 } else {
                     pageButton.setEnabled(true);
                     pageButton.setTextColor(ContextCompat.getColor(this, android.R.color.black));
+                    pageButton.setBackgroundResource(R.drawable.pagination_button);
                 }
                 totalWidth += buttonWidth;
             }
         }
 
-        // Ensure targetScrollX is within bounds
         final int finalTargetScrollX = Math.max(0, Math.min(targetScrollX, binding.paginationLayout.getWidth() - binding.paginationScrollView.getWidth()));
 
-        // Smooth scroll to the target position
-        binding.paginationScrollView.postDelayed(() ->
-                binding.paginationScrollView.smoothScrollTo(finalTargetScrollX, 0), 100);
+        binding.paginationScrollView.post(() -> {
+            binding.paginationScrollView.smoothScrollTo(finalTargetScrollX, 0);
+        });
     }
 
     private void setupFab() {
