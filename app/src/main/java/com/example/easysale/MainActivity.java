@@ -1,18 +1,26 @@
 package com.example.easysale;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -206,9 +214,19 @@ public class MainActivity extends AppCompatActivity implements
         binding.userCountTextView.setText("Found " + count + " users");
     }
 
+    private void showDeleteConfirmationDialog(User user) {
+        DeleteDialog dialog = new DeleteDialog(this, user, new DeleteDialog.OnDeleteConfirmedListener() {
+            @Override
+            public void onDeleteConfirmed(User user) {
+                userViewModel.deleteUser(user);
+            }
+        });
+        dialog.show();
+    }
+
     @Override
     public void onDeleteClick(User user) {
-        userViewModel.deleteUser(user);
+        showDeleteConfirmationDialog(user);
     }
 
     @Override
