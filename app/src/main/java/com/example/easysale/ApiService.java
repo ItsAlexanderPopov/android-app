@@ -20,9 +20,9 @@ public interface ApiService {
 
     // Update user details by ID
     @PUT("users/{id}")
-    Call<UserResponse> updateUser(@Path("id") int userId, @Body User user);
+    Call<User> updateUser(@Path("id") int userId, @Body User user);
 
     // Create a new user
     @POST("users")
-    Call<UserResponse> createUser(@Body User user);
+    Call<User> createUser(@Body User user);
 }

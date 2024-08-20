@@ -213,12 +213,24 @@ public class UserViewModel extends AndroidViewModel {
         repository.updateUser(user, new FetchUsers.OnUserUpdateListener() {
             @Override
             public void onUserUpdated(User updatedUser) {
-                int indexInAll = allUsers.indexOf(user);
+                int indexInAll = -1;
+                for (int i = 0; i < allUsers.size(); i++) {
+                    if (allUsers.get(i).getId() == updatedUser.getId()) {
+                        indexInAll = i;
+                        break;
+                    }
+                }
                 if (indexInAll != -1) {
                     allUsers.set(indexInAll, updatedUser);
                 }
 
-                int indexInFiltered = filteredUsers.indexOf(user);
+                int indexInFiltered = -1;
+                for (int i = 0; i < filteredUsers.size(); i++) {
+                    if (filteredUsers.get(i).getId() == updatedUser.getId()) {
+                        indexInFiltered = i;
+                        break;
+                    }
+                }
                 if (indexInFiltered != -1) {
                     filteredUsers.set(indexInFiltered, updatedUser);
                 }
@@ -235,7 +247,6 @@ public class UserViewModel extends AndroidViewModel {
             }
         });
     }
-
 
     public void createUser(User user, OnUserCreateListener listener) {
         repository.createUser(user, new FetchUsers.OnUserCreateListener() {

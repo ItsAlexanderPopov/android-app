@@ -93,7 +93,6 @@ public class FetchUsers {
         });
     }
 
-
     public void deleteUser(User user, final OnUserDeleteListener listener) {
         apiService.deleteUser(user.getId()).enqueue(new Callback<Void>() {
             @Override
@@ -114,10 +113,15 @@ public class FetchUsers {
     }
 
     public void updateUser(User user, final OnUserUpdateListener listener) {
-        apiService.updateUser(user.getId(), user).enqueue(new Callback<UserResponse>() {
+        apiService.updateUser(user.getId(), user).enqueue(new Callback<User>() {
             @Override
-            public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
-                if (response.isSuccessful()) {
+            public void onResponse(Call<User> call, Response<User> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    User updatedUser = response.body();
+                    // Update only the fields that the API returns
+                    user.setFirstName(updatedUser.getFirstName());
+                    user.setLastName(updatedUser.getLastName());
+                    user.setEmail(updatedUser.getEmail());
                     AsyncTask.execute(() -> userDao.update(user));
                     listener.onUserUpdated(user);
                 } else {
@@ -126,36 +130,38 @@ public class FetchUsers {
             }
 
             @Override
-            public void onFailure(Call<UserResponse> call, Throwable t) {
-                Log.e("FetchUsers", "Update failed", t);
+            public void onFailure(Call<User> call, Throwable t) {
+                Log.e(TAG, "Update failed", t);
                 listener.onError("Error updating user: " + t.getMessage());
             }
         });
     }
 
     public void createUser(User user, final OnUserCreateListener listener) {
-        Log.d(TAG, "createUser: Attempting to create user: " + user.getFirstName());
-        apiService.createUser(user).enqueue(new Callback<UserResponse>() {
+        apiService.createUser(user).enqueue(new Callback<User>() {
             @Override
-            public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
-                if (response.isSuccessful()) {
-                    Log.d(TAG, "createUser: API call successful");
+            public void onResponse(Call<User> call, Response<User> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    User createdUser = response.body();
+                    // Use the data returned from the API
                     AsyncTask.execute(() -> {
-                        int newID = userDao.getMaxUserId() + 1;
-                        user.setId(newID);
-                        userDao.insert(user);
-                        Log.d(TAG, "createUser: User inserted into local database with ID: " + user.getId());
-                        listener.onUserCreated(user);
+                        // The API might not return an ID, so we'll generate one locally if needed
+                        if (createdUser.getId() == 0) {
+                            int newID = userDao.getMaxUserId() + 1;
+                            createdUser.setId(newID);
+                        }
+                        userDao.insert(createdUser);
+                        Log.d(TAG, "createUser: User inserted into local database with ID: " + createdUser.getId());
                     });
+                    listener.onUserCreated(createdUser);
                 } else {
-                    Log.e(TAG, "createUser: API call failed: " + response.message());
                     listener.onError("Error creating user: " + response.message());
                 }
             }
 
             @Override
-            public void onFailure(Call<UserResponse> call, Throwable t) {
-                Log.e(TAG, "createUser: API call failed", t);
+            public void onFailure(Call<User> call, Throwable t) {
+                Log.e(TAG, "Create user failed", t);
                 listener.onError("Error creating user: " + t.getMessage());
             }
         });
