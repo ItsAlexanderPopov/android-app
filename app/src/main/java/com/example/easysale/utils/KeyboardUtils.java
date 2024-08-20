@@ -1,4 +1,4 @@
-package com.example.easysale;
+package com.example.easysale.utils;
 
 import android.app.Activity;
 import android.content.Context;

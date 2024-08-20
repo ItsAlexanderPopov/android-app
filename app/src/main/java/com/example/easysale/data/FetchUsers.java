@@ -1,4 +1,4 @@
-package com.example.easysale;
+package com.example.easysale.data;
 
 import android.content.Context;
 import android.os.AsyncTask;
@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import android.content.SharedPreferences;
+
+import com.example.easysale.model.User;
+import com.example.easysale.model.UserResponse;
 
 public class FetchUsers {
     private final ApiService apiService;

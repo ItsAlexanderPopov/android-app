@@ -1,4 +1,7 @@
-package com.example.easysale;
+package com.example.easysale.data;
+
+import com.example.easysale.model.User;
+import com.example.easysale.model.UserResponse;
 
 import retrofit2.Call;
 import retrofit2.http.Body;

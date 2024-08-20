@@ -1,4 +1,4 @@
-package com.example.easysale;
+package com.example.easysale.viewmodel;
 
 import android.app.Application;
 import android.util.Log;
@@ -6,6 +6,9 @@ import android.util.Log;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+
+import com.example.easysale.data.FetchUsers;
+import com.example.easysale.model.User;
 
 import java.util.ArrayList;
 import java.util.Collections;

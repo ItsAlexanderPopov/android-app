@@ -1,6 +1,5 @@
 package com.example.easysale;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
@@ -10,7 +9,6 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -23,7 +21,14 @@ import androidx.core.content.ContextCompat;
 import androidx.core.widget.TextViewCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
+
+import com.example.easysale.adapter.UserAdapter;
 import com.example.easysale.databinding.MainActivityBinding;
+import com.example.easysale.model.User;
+import com.example.easysale.utils.KeyboardUtils;
+import com.example.easysale.utils.OnSwipeTouchListener;
+import com.example.easysale.viewmodel.UserViewModel;
+
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements

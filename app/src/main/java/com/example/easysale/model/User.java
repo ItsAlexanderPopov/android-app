@@ -1,4 +1,4 @@
-package com.example.easysale;
+package com.example.easysale.model;
 
 import android.util.Log;
 import java.io.Serializable;

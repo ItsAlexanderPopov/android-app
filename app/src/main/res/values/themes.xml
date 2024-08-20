@@ -40,4 +40,10 @@
         <item name="colorControlActivated">@color/colorPrimary</item>
         <item name="android:textColorHighlight">@color/colorPrimary</item>
     </style>
+
+    <style name="CustomButtonStyle" parent="Widget.AppCompat.Button">
+        <item name="backgroundTint">@color/colorPrimary</item>
+        <item name="android:textColor">@color/dark</item>
+    </style>
+
 </resources>

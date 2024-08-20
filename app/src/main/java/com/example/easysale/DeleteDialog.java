@@ -13,6 +13,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 
+import com.example.easysale.model.User;
+
 public class DeleteDialog extends Dialog {
     private final User user;
     private final OnDeleteConfirmedListener listener;

@@ -1,4 +1,4 @@
-package com.example.easysale;
+package com.example.easysale.adapter;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,6 +8,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
+import com.example.easysale.R;
+import com.example.easysale.model.User;
+
 import java.util.List;
 import java.util.ArrayList;
 

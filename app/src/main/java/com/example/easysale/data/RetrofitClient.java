@@ -1,4 +1,4 @@
-package com.example.easysale;
+package com.example.easysale.data;
 
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;

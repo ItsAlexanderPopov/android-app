@@ -1,10 +1,12 @@
-package com.example.easysale;
+package com.example.easysale.data;
 
 import android.content.Context;
 
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
+
+import com.example.easysale.model.User;
 
 @Database(entities = {User.class}, version = 3)
 public abstract class UserDatabase extends RoomDatabase {
