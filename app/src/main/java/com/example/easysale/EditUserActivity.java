@@ -71,6 +71,7 @@ public class EditUserActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setTitle(state + " User");
+            binding.toolbar.setNavigationContentDescription("Go Back");
         }
     }
 
