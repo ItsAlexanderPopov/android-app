@@ -14,7 +14,7 @@ public abstract class UserDatabase extends RoomDatabase {
 
     private static volatile UserDatabase INSTANCE;
 
-    static UserDatabase getDatabase(final Context context) {
+    public static UserDatabase getDatabase(final Context context) {
         if (INSTANCE == null) {
             synchronized (UserDatabase.class) {
                 if (INSTANCE == null) {

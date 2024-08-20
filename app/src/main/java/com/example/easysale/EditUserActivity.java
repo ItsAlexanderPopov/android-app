@@ -30,6 +30,8 @@ public class EditUserActivity extends AppCompatActivity {
     public static final String STATE_EDIT = "Edit";
     public static final String STATE_ADD = "Add";
     private static final String DEFAULT_AVATAR = "android.resource://com.example.easysale/drawable/placeholder";
+    private boolean isSaving = false;
+
 
     private final ActivityResultLauncher<Intent> pickImageLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -106,7 +108,13 @@ public class EditUserActivity extends AppCompatActivity {
     }
 
     private void setupSaveButton() {
-        binding.buttonSave.setOnClickListener(v -> saveUser());
+        binding.buttonSave.setOnClickListener(v -> {
+            if (!isSaving) {
+                isSaving = true;
+                binding.buttonSave.setEnabled(false);
+                saveUser();
+            }
+        });
     }
 
     private void setupBackNavigation() {
@@ -128,26 +136,28 @@ public class EditUserActivity extends AppCompatActivity {
     }
 
     private void saveUser() {
-        // Cleans strings from common mistakes and then validates
         String firstName = cleanName(binding.editTextFirstName.getText().toString());
         String lastName = cleanName(binding.editTextLastName.getText().toString());
         String email = binding.editTextEmail.getText().toString().trim();
-        if (!validateInputs(firstName, lastName, email)) {
-            return;
-        }
 
-        // Hide the keyboard
-        KeyboardUtils.hideKeyboard(this);
+        validateInputs(firstName, lastName, email, isValid -> {
+            if (isValid) {
+                // Hide the keyboard
+                KeyboardUtils.hideKeyboard(this);
 
-        currentUser.setFirstName(firstName);
-        currentUser.setLastName(lastName);
-        currentUser.setEmail(email);
+                currentUser.setFirstName(firstName);
+                currentUser.setLastName(lastName);
+                currentUser.setEmail(email);
 
-        if (STATE_EDIT.equals(state)) {
-            updateUser();
-        } else if (STATE_ADD.equals(state)) {
-            createUser();
-        }
+                if (STATE_EDIT.equals(state)) {
+                    updateUser();
+                } else if (STATE_ADD.equals(state)) {
+                    createUser();
+                }
+            } else {
+                resetSaveButtonState();
+            }
+        });
     }
 
     private String cleanName(String name) {
@@ -155,54 +165,64 @@ public class EditUserActivity extends AppCompatActivity {
         return name.trim().replaceAll("\\s+", " ");
     }
 
-    private boolean validateInputs(String firstName, String lastName, String email) {
-        boolean isValid = true;
-        // Disclaimer: after research, people can have special characters and numbers in their name.
-        if (firstName.isEmpty()) {
-            binding.editTextFirstName.setError("First name is required");
-            isValid = false;
-        } else if (firstName.length() < 2) {
-            binding.editTextFirstName.setError("First name must be at least 2 characters long");
-            isValid = false;
-        } else if (firstName.length() > 35) {
-            binding.editTextFirstName.setError("First name must not exceed 35 characters");
-            isValid = false;
-        } else {
-            binding.editTextFirstName.setError(null);
-            binding.editTextFirstName.setText(firstName);
-        }
+    private void validateInputs(String firstName, String lastName, String email, ValidationCallback callback) {
+        boolean isValid = validateName(firstName, binding.editTextFirstName, "First name") &&
+                validateName(lastName, binding.editTextLastName, "Last name") &&
+                validateEmail(email);
 
-        if (lastName.isEmpty()) {
-            binding.editTextLastName.setError("Last name is required");
-            isValid = false;
-        } else if (lastName.length() < 2) {
-            binding.editTextLastName.setError("Last name must be at least 2 characters long");
-            isValid = false;
-        } else if (lastName.length() > 35) {
-            binding.editTextLastName.setError("Last name must not exceed 35 characters");
-            isValid = false;
+        if (isValid) {
+            int currentUserId = (currentUser != null) ? currentUser.getId() : -1;
+            userViewModel.isEmailUnique(email, currentUserId, isUnique -> {
+                runOnUiThread(() -> {
+                    if (!isUnique) {
+                        binding.editTextEmail.setError("Email is already taken");
+                        callback.onValidationComplete(false);
+                    } else {
+                        binding.editTextEmail.setError(null);
+                        callback.onValidationComplete(true);
+                    }
+                });
+            });
         } else {
-            binding.editTextLastName.setError(null);
-            binding.editTextLastName.setText(lastName);
+            callback.onValidationComplete(false);
         }
+    }
 
+    private boolean validateName(String name, android.widget.EditText editText, String fieldName) {
+        if (name.isEmpty()) {
+            editText.setError(fieldName + " is required");
+            return false;
+        } else if (name.length() < 2) {
+            editText.setError(fieldName + " must be at least 2 characters long");
+            return false;
+        } else if (name.length() > 35) {
+            editText.setError(fieldName + " must not exceed 35 characters");
+            return false;
+        } else {
+            editText.setError(null);
+            editText.setText(name);
+            return true;
+        }
+    }
+
+    private boolean validateEmail(String email) {
         if (email.isEmpty()) {
             binding.editTextEmail.setError("Email is required");
-            isValid = false;
+            return false;
         } else if (!isValidEmail(email)) {
             binding.editTextEmail.setError("Invalid email format");
-            isValid = false;
+            return false;
         } else {
             binding.editTextEmail.setError(null);
+            return true;
         }
-
-        return isValid;
     }
 
     private boolean isValidEmail(String email) {
         String emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+";
         return email.matches(emailPattern);
     }
+
 
     private void updateUser() {
         Log.d(TAG, "Updating user: " + currentUser.toString());
@@ -224,6 +244,7 @@ public class EditUserActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     Log.e(TAG, "Update error: " + error);
                     showError("Update failed: " + error);
+                    resetSaveButtonState();
                 });
             }
         });
@@ -245,11 +266,16 @@ public class EditUserActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     showError("Creation failed: " + error);
                     Log.e("EditUserActivity", "Creation error: " + error);
+                    resetSaveButtonState();
                 });
             }
         });
     }
 
+    private void resetSaveButtonState() {
+        isSaving = false;
+        binding.buttonSave.setEnabled(true);
+    }
 
     private void showError(String error) {
         Toast.makeText(this, error, Toast.LENGTH_SHORT).show();
@@ -259,12 +285,17 @@ public class EditUserActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
             // Hide the keyboard when the back button is pressed
-            KeyboardUtils.hideKeyboard(this);  // Delay the back navigation slightly to ensure keyboard is hidden
+            KeyboardUtils.hideKeyboard(this);
+            // Delay the back navigation slightly to ensure keyboard is hidden
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 getOnBackPressedDispatcher().onBackPressed();
             }, 300);
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private interface ValidationCallback {
+        void onValidationComplete(boolean isValid);
     }
 }

@@ -8,16 +8,22 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.example.easysale.data.FetchUsers;
+import com.example.easysale.data.UserDao;
+import com.example.easysale.data.UserDatabase;
 import com.example.easysale.model.User;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 public class UserViewModel extends AndroidViewModel {
     private static final String TAG = "UserViewModel";
     private FetchUsers repository;
+    private UserDao userDao;
+    private ExecutorService executor;
     private MutableLiveData<List<User>> users = new MutableLiveData<>();
     private MutableLiveData<Integer> totalPages = new MutableLiveData<>();
     private MutableLiveData<Integer> totalUsers = new MutableLiveData<>();
@@ -34,6 +40,8 @@ public class UserViewModel extends AndroidViewModel {
     public UserViewModel(Application application) {
         super(application);
         repository = new FetchUsers(application);
+        userDao = UserDatabase.getDatabase(application).userDao();
+        executor = Executors.newSingleThreadExecutor();
     }
 
     public LiveData<List<User>> getUsers() {
@@ -279,6 +287,18 @@ public class UserViewModel extends AndroidViewModel {
                 user.getEmail().toLowerCase().contains(lowercaseQuery);
     }
 
+    public void isEmailUnique(String email, int userId, EmailUniqueCallback callback) {
+        executor.execute(() -> {
+            int count = userDao.countUsersWithEmail(email, userId);
+            boolean isUnique = count == 0;
+            callback.onResult(isUnique);
+        });
+    }
+
+    public interface EmailUniqueCallback {
+        void onResult(boolean isUnique);
+    }
+
     public interface OnUserUpdateListener {
         void onUserUpdated();
         void onError(String error);
@@ -287,5 +307,11 @@ public class UserViewModel extends AndroidViewModel {
     public interface OnUserCreateListener {
         void onUserCreated();
         void onError(String error);
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        executor.shutdown();
     }
 }

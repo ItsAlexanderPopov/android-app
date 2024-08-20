@@ -39,4 +39,7 @@ public interface UserDao {
 
     @Query("SELECT * FROM users LIMIT :limit OFFSET :offset")
     List<User> getUsersPage(int offset, int limit);
+
+    @Query("SELECT COUNT(*) FROM users WHERE email = :email AND id != :userId")
+    int countUsersWithEmail(String email, int userId);
 }
