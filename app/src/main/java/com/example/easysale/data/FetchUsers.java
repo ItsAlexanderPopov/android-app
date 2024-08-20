@@ -147,13 +147,11 @@ public class FetchUsers {
                     User createdUser = response.body();
                     // Use the data returned from the API
                     AsyncTask.execute(() -> {
-                        // The API might not return an ID, so we'll generate one locally if needed
-                        if (createdUser.getId() == 0) {
-                            int newID = userDao.getMaxUserId() + 1;
-                            createdUser.setId(newID);
-                        }
+                        // The API doesn't return ID so we create it ourselves
+                        int newID = userDao.getMaxUserId() + 1;
+                        Log.d(TAG, "createUser: Generated new ID: " + newID);
+                        createdUser.setId(newID);
                         userDao.insert(createdUser);
-                        Log.d(TAG, "createUser: User inserted into local database with ID: " + createdUser.getId());
                     });
                     listener.onUserCreated(createdUser);
                 } else {

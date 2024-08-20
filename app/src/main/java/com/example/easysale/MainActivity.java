@@ -2,31 +2,21 @@ package com.example.easysale;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
 import android.util.Log;
-import android.util.TypedValue;
-import android.view.Gravity;
-import android.view.MotionEvent;
-import android.view.View;
-import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.content.ContextCompat;
-import androidx.core.widget.TextViewCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
-
 import com.example.easysale.adapter.UserAdapter;
 import com.example.easysale.databinding.MainActivityBinding;
 import com.example.easysale.model.User;
 import com.example.easysale.utils.KeyboardUtils;
 import com.example.easysale.utils.OnSwipeTouchListener;
+import com.example.easysale.utils.PaginationManager;
+import com.example.easysale.utils.SearchBarManager;
 import com.example.easysale.viewmodel.UserViewModel;
 
 import java.util.ArrayList;
@@ -37,7 +27,10 @@ public class MainActivity extends AppCompatActivity implements
     private UserViewModel userViewModel;
     private UserAdapter userAdapter;
     private MainActivityBinding binding;
+    private SearchBarManager searchBarManager;
+    private PaginationManager paginationManager;
 
+    // ActivityResultLauncher for handling EditUserActivity results
     private final ActivityResultLauncher<Intent> editUserLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
@@ -52,7 +45,8 @@ public class MainActivity extends AppCompatActivity implements
                         Log.d(TAG, "No updated user data received. Loading all users.");
                         userViewModel.loadAllUsers();
                     }
-                    // Don't clear the search bar or reset focus here
+                    // Clear the search bar when returning from EditUserActivity
+                    searchBarManager.clearSearchBar();
                 } else {
                     Log.d(TAG, "EditUserActivity did not return RESULT_OK");
                 }
@@ -63,104 +57,55 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         binding = MainActivityBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+
+        setupComponents();
+    }
+
+    // Initialize and setup all components
+    private void setupComponents() {
         setupRecyclerView();
         setupViewModel();
-        setupFab();
         setupToolbar();
-        setupSearchBar();
+        setupFab();
+
+        searchBarManager = new SearchBarManager(this, binding, userViewModel);
+        paginationManager = new PaginationManager(this, binding, userViewModel);
+
         setupSwipeGesture();
     }
 
+    // Setup SearchBarManager
+    private void setupSearchBar() {
+        searchBarManager = new SearchBarManager(this, binding, userViewModel);
+    }
+
+    // Setup the toolbar with logo
     private void setupToolbar() {
         setSupportActionBar(binding.toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(false);
-            getSupportActionBar().setDisplayShowTitleEnabled(false); // Disable default title
+            getSupportActionBar().setDisplayShowTitleEnabled(false);
 
-            // Create an ImageView for the logo
             ImageView logo = new ImageView(this);
-            logo.setImageResource(R.drawable.logo); // Set your logo drawable here
+            logo.setImageResource(R.drawable.logo);
             Toolbar.LayoutParams params = new Toolbar.LayoutParams(
                     Toolbar.LayoutParams.WRAP_CONTENT,
                     Toolbar.LayoutParams.WRAP_CONTENT
             );
             logo.setLayoutParams(params);
 
-            // Add the ImageView to the toolbar
             binding.toolbar.addView(logo);
         }
     }
 
-    private void setupSearchBar() {
-        updateClearIconVisibility(binding.searchEditText.getText());
-
-        binding.searchEditText.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-
-            @Override
-            public void afterTextChanged(Editable s) {
-                updateClearIconVisibility(s);
-                if (s.toString().isEmpty()) {
-                    userViewModel.loadAllUsers();  // This will reset to page 1
-                } else {
-                    userViewModel.searchUsers(s.toString());
-                }
-            }
-        });
-
-        binding.searchEditText.setOnTouchListener((v, event) -> {
-            final int DRAWABLE_RIGHT = 2;
-            if(event.getAction() == MotionEvent.ACTION_UP) {
-                if(binding.searchEditText.getCompoundDrawables()[DRAWABLE_RIGHT] != null &&
-                        event.getRawX() >= (binding.searchEditText.getRight() - binding.searchEditText.getCompoundDrawables()[DRAWABLE_RIGHT].getBounds().width())) {
-                    binding.searchEditText.setText("");
-                    userViewModel.loadAllUsers();
-                    return true;
-                }
-            }
-            return false;
-        });
-    }
-
-    private void updateClearIconVisibility(CharSequence s) {
-        if (s.length() > 0) {
-            binding.searchEditText.setCompoundDrawablesWithIntrinsicBounds(0, 0, android.R.drawable.ic_delete, 0);
-        } else {
-            binding.searchEditText.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0);
-        }
-    }
-
-    private void setupSwipeGesture() {
-        binding.recyclerView.setOnTouchListener(new OnSwipeTouchListener(this) {
-            @Override
-            public void onSwipeLeft() {
-                Integer currentPage = userViewModel.getCurrentPage().getValue();
-                Integer totalPages = userViewModel.getTotalPages().getValue();
-                if (currentPage != null && totalPages != null && currentPage < totalPages) {
-                    userViewModel.loadPage(currentPage + 1);
-                }
-            }
-
-            @Override
-            public void onSwipeRight() {
-                Integer currentPage = userViewModel.getCurrentPage().getValue();
-                if (currentPage != null && currentPage > 1) {
-                    userViewModel.loadPage(currentPage - 1);
-                }
-            }
-        });
-    }
-
+    // Setup RecyclerView with adapter
     private void setupRecyclerView() {
         userAdapter = new UserAdapter(new ArrayList<>(), this, this);
         binding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerView.setAdapter(userAdapter);
     }
 
+    // Initialize ViewModel and observe LiveData
     private void setupViewModel() {
         userViewModel = new ViewModelProvider(this).get(UserViewModel.class);
         userViewModel.getUsers().observe(this, users -> {
@@ -171,106 +116,27 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
         userViewModel.getTotalUsers().observe(this, this::updateUserCount);
-        userViewModel.getTotalPages().observe(this, this::updatePagination);
-        userViewModel.getSelectedPage().observe(this, this::updatePaginationButtonStates);
-        userViewModel.getPaginationUpdated().observe(this, updated -> {
-            if (updated) {
-                updatePagination(userViewModel.getTotalPages().getValue());
-                updatePaginationButtonStates(userViewModel.getSelectedPage().getValue());
-            }
-        });
         userViewModel.loadAllUsers();
     }
 
-    private int dpToPx(int dp) {
-        float density = getResources().getDisplayMetrics().density;
-        return Math.round((float) dp * density);
-    }
-
-    private void updatePagination(Integer totalPages) {
-        if (totalPages == null) return;
-        binding.paginationLayout.removeAllViews();
-        for (int i = 1; i <= totalPages; i++) {
-            Button pageButton = new Button(this);
-            pageButton.setText(String.valueOf(i));
-            pageButton.setTextColor(ContextCompat.getColor(this, android.R.color.black));
-            pageButton.setBackgroundResource(R.drawable.pagination_button);
-
-            final int page = i;
-            pageButton.setOnClickListener(v -> {
-                userViewModel.loadPage(page);
-                Log.d(TAG, "Page button clicked: " + page);
-            });
-
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                    dpToPx(36), // Width
-                    dpToPx(36)  // Height
-            );
-            params.setMargins(dpToPx(4), 0, dpToPx(4), 0);
-            pageButton.setLayoutParams(params);
-
-            pageButton.setGravity(Gravity.CENTER);
-            pageButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-            pageButton.setIncludeFontPadding(false);
-            pageButton.setPadding(0, 0, 0, 0);
-
-            TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(
-                    pageButton,
-                    8, // Minimum text size
-                    14, // Maximum text size
-                    1, // Step granularity
-                    TypedValue.COMPLEX_UNIT_SP
-            );
-
-            binding.paginationLayout.addView(pageButton);
-        }
-        updatePaginationButtonStates(userViewModel.getSelectedPage().getValue());
-    }
-
-    private void updatePaginationButtonStates(Integer currentPage) {
-        if (currentPage == null) return;
-        Log.d(TAG, "Updating pagination button states. Current page: " + currentPage);
-
-        int totalPages = binding.paginationLayout.getChildCount();
-        if (currentPage < 1 || currentPage > totalPages) {
-            Log.e(TAG, "Invalid current page: " + currentPage + ". Total pages: " + totalPages);
-            userViewModel.loadPage(1);
-            return;
-        }
-
-        int totalWidth = 0;
-        int targetScrollX = 0;
-        int buttonWidth = dpToPx(36 + 8); // button width (36dp) + margins (4dp on each side)
-
-        for (int i = 0; i < binding.paginationLayout.getChildCount(); i++) {
-            View view = binding.paginationLayout.getChildAt(i);
-            if (view instanceof Button) {
-                Button pageButton = (Button) view;
-                int page = Integer.parseInt(pageButton.getText().toString());
-                if (page == currentPage) {
-                    pageButton.setEnabled(false);
-                    pageButton.setTextColor(ContextCompat.getColor(this, R.color.light));
-                    pageButton.setBackgroundResource(R.drawable.pagination_button_selected);
-                    targetScrollX = totalWidth - (binding.paginationScrollView.getWidth() - buttonWidth) / 2;
-                } else {
-                    pageButton.setEnabled(true);
-                    pageButton.setTextColor(ContextCompat.getColor(this, android.R.color.black));
-                    pageButton.setBackgroundResource(R.drawable.pagination_button);
-                }
-                totalWidth += buttonWidth;
+    // Setup swipe gesture for pagination
+    private void setupSwipeGesture() {
+        binding.recyclerView.setOnTouchListener(new OnSwipeTouchListener(this) {
+            @Override
+            public void onSwipeLeft() {
+                paginationManager.goToNextPage();
             }
-        }
 
-        final int finalTargetScrollX = Math.max(0, Math.min(targetScrollX, binding.paginationLayout.getWidth() - binding.paginationScrollView.getWidth()));
-
-        binding.paginationScrollView.post(() -> {
-            binding.paginationScrollView.smoothScrollTo(finalTargetScrollX, 0);
+            @Override
+            public void onSwipeRight() {
+                paginationManager.goToPreviousPage();
+            }
         });
     }
 
+    // Setup FAB for adding new user
     private void setupFab() {
         binding.addImageView.setOnClickListener(v -> {
-            // Hide the keyboard
             KeyboardUtils.hideKeyboard(this);
             Intent intent = new Intent(MainActivity.this, EditUserActivity.class);
             intent.putExtra(EditUserActivity.EXTRA_STATE, EditUserActivity.STATE_ADD);
@@ -278,28 +144,26 @@ public class MainActivity extends AppCompatActivity implements
         });
     }
 
+    // Update user count display
     private void updateUserCount(int count) {
         binding.userCountTextView.setText("Found " + count + " users");
     }
 
+    // Show delete confirmation dialog
     private void showDeleteConfirmationDialog(User user) {
-        DeleteDialog dialog = new DeleteDialog(this, user, new DeleteDialog.OnDeleteConfirmedListener() {
-            @Override
-            public void onDeleteConfirmed(User user) {
-                userViewModel.deleteUserAndReload(user);
-            }
-        });
+        DeleteDialog dialog = new DeleteDialog(this, user, user1 -> userViewModel.deleteUserAndReload(user1));
         dialog.show();
     }
 
+    // Handle delete click from adapter
     @Override
     public void onDeleteClick(User user) {
         showDeleteConfirmationDialog(user);
     }
 
+    // Handle item click from adapter
     @Override
     public void onItemClick(User user) {
-        // Hide the keyboard
         KeyboardUtils.hideKeyboard(this);
         Intent intent = new Intent(this, EditUserActivity.class);
         intent.putExtra(EditUserActivity.EXTRA_STATE, EditUserActivity.STATE_EDIT);
