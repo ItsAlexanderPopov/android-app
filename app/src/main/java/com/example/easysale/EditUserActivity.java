@@ -1,5 +1,6 @@
 package com.example.easysale;
 
+import android.app.Dialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -8,6 +9,7 @@ import android.os.Looper;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -127,7 +129,40 @@ public class EditUserActivity extends AppCompatActivity {
     }
 
     private void setupAvatarClick() {
-        binding.imageViewAvatar.setOnClickListener(v -> openGallery());
+        binding.imageViewAvatar.setOnClickListener(v -> handleAvatarClick());
+    }
+
+    private void handleAvatarClick() {
+        if (currentUser.getAvatar().equals(DEFAULT_AVATAR)) {
+            openGallery();
+        } else {
+            showAvatarOptionsDialog();
+        }
+    }
+
+    private void showAvatarOptionsDialog() {
+        Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.avatar_dialog);
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+
+        View closeIcon = dialog.findViewById(R.id.close_icon);
+        View deletePictureButton = dialog.findViewById(R.id.delete_picture_button);
+        View uploadPictureButton = dialog.findViewById(R.id.upload_picture_button);
+
+        closeIcon.setOnClickListener(v -> dialog.dismiss());
+
+        deletePictureButton.setOnClickListener(v -> {
+            currentUser.setAvatar(DEFAULT_AVATAR);
+            loadAvatarImage(DEFAULT_AVATAR);
+            dialog.dismiss();
+        });
+
+        uploadPictureButton.setOnClickListener(v -> {
+            openGallery();
+            dialog.dismiss();
+        });
+
+        dialog.show();
     }
 
     private void openGallery() {
@@ -219,9 +254,10 @@ public class EditUserActivity extends AppCompatActivity {
     }
 
     private boolean isValidEmail(String email) {
-        String emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+";
+        String emailPattern = "(?i)^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$";
         return email.matches(emailPattern);
     }
+
 
 
     private void updateUser() {
