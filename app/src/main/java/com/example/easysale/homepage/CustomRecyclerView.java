@@ -1,4 +1,4 @@
-package com.example.easysale.utils;
+package com.example.easysale.homepage;
 
 import android.content.Context;
 import android.util.AttributeSet;

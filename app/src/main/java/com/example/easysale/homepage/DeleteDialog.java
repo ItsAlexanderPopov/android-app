@@ -1,4 +1,4 @@
-package com.example.easysale;
+package com.example.easysale.homepage;
 
 import android.app.Dialog;
 import android.content.Context;
@@ -13,6 +13,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 
+import com.example.easysale.R;
 import com.example.easysale.model.User;
 
 public class DeleteDialog extends Dialog {

@@ -1,4 +1,4 @@
-package com.example.easysale.utils;
+package com.example.easysale.homepage;
 
 import android.util.Log;
 import android.util.TypedValue;
@@ -9,7 +9,6 @@ import android.widget.LinearLayout;
 import androidx.core.content.ContextCompat;
 import androidx.core.widget.TextViewCompat;
 
-import com.example.easysale.MainActivity;
 import com.example.easysale.R;
 import com.example.easysale.databinding.MainActivityBinding;
 import com.example.easysale.viewmodel.UserViewModel;

@@ -1,4 +1,4 @@
-package com.example.easysale;
+package com.example.easysale.userpage;
 
 import android.app.Dialog;
 import android.content.Intent;
@@ -17,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import com.bumptech.glide.Glide;
+import com.example.easysale.R;
 import com.example.easysale.databinding.ActivityEditUserBinding;
 import com.example.easysale.model.User;
 import com.example.easysale.utils.ClickDebounce;
@@ -172,95 +173,38 @@ public class EditUserActivity extends AppCompatActivity {
         pickImageLauncher.launch(intent);
     }
 
-    private String cleanName(String name) {
-        // Remove leading and trailing spaces, then replace multiple spaces with a single space
-        return name.trim().replaceAll("\\s+", " ");
-    }
-
-    private void validateInputs(String firstName, String lastName, String email, ValidationCallback callback) {
-        boolean isValid = validateName(firstName, binding.editTextFirstName, "First name") &&
-                validateName(lastName, binding.editTextLastName, "Last name") &&
-                validateEmail(email);
-
-        if (isValid) {
-            int currentUserId = (currentUser != null) ? currentUser.getId() : -1;
-            userViewModel.isEmailUnique(email, currentUserId, isUnique -> {
-                runOnUiThread(() -> {
-                    if (!isUnique) {
-                        binding.editTextEmail.setError("Email is already taken");
-                        callback.onValidationComplete(false);
-                    } else {
-                        binding.editTextEmail.setError(null);
-                        callback.onValidationComplete(true);
-                    }
-                });
-            });
-        } else {
-            callback.onValidationComplete(false);
-        }
-    }
-
-    private boolean validateName(String name, android.widget.EditText editText, String fieldName) {
-        if (name.isEmpty()) {
-            editText.setError(fieldName + " is required");
-            return false;
-        } else if (name.length() < 2) {
-            editText.setError(fieldName + " must be at least 2 characters long");
-            return false;
-        } else if (name.length() > 35) {
-            editText.setError(fieldName + " must not exceed 35 characters");
-            return false;
-        } else {
-            editText.setError(null);
-            editText.setText(name);
-            return true;
-        }
-    }
-
-    private boolean validateEmail(String email) {
-        if (email.isEmpty()) {
-            binding.editTextEmail.setError("Email is required");
-            return false;
-        } else if (!isValidEmail(email)) {
-            binding.editTextEmail.setError("Invalid email format");
-            return false;
-        } else {
-            binding.editTextEmail.setError(null);
-            return true;
-        }
-    }
-
-    private boolean isValidEmail(String email) {
-        String emailPattern = "(?i)^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$";
-        return email.matches(emailPattern);
-    }
-
     private void saveUser() {
-        String firstName = cleanName(binding.editTextFirstName.getText().toString());
-        String lastName = cleanName(binding.editTextLastName.getText().toString());
+        String firstName = EditUserValidations.cleanName(binding.editTextFirstName.getText().toString());
+        String lastName = EditUserValidations.cleanName(binding.editTextLastName.getText().toString());
         String email = binding.editTextEmail.getText().toString().trim();
 
-        validateInputs(firstName, lastName, email, isValid -> {
-            if (isValid) {
-                KeyboardUtils.hideKeyboard(this);
+        EditUserValidations.validateInputs(
+                this,
+                firstName, lastName, email,
+                binding.editTextFirstName, binding.editTextLastName, binding.editTextEmail,
+                (currentUser != null) ? currentUser.getId() : -1,
+                userViewModel,
+                isValid -> {
+                    if (isValid) {
+                        KeyboardUtils.hideKeyboard(EditUserActivity.this);
 
-                currentUser.setFirstName(firstName);
-                currentUser.setLastName(lastName);
-                currentUser.setEmail(email);
+                        currentUser.setFirstName(firstName);
+                        currentUser.setLastName(lastName);
+                        currentUser.setEmail(email);
 
-                binding.buttonSave.setEnabled(false);
+                        binding.buttonSave.setEnabled(false);
 
-                if (STATE_EDIT.equals(state)) {
-                    updateUser();
-                } else if (STATE_ADD.equals(state)) {
-                    createUser();
+                        if (STATE_EDIT.equals(state)) {
+                            updateUser();
+                        } else if (STATE_ADD.equals(state)) {
+                            createUser();
+                        }
+                    } else {
+                        binding.buttonSave.setEnabled(true);
+                    }
                 }
-            } else {
-                binding.buttonSave.setEnabled(true);
-            }
-        });
+        );
     }
-
 
     private void updateUser() {
         Log.d(TAG, "updateUser: Updating user - " + currentUser.toString());
@@ -326,10 +270,6 @@ public class EditUserActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    private interface ValidationCallback {
-        void onValidationComplete(boolean isValid);
     }
 
     @Override

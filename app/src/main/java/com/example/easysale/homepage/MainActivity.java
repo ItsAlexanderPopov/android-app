@@ -1,9 +1,11 @@
-package com.example.easysale;
+package com.example.easysale.homepage;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import androidx.activity.result.ActivityResultLauncher;
@@ -12,14 +14,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
+
+import com.example.easysale.userpage.EditUserActivity;
+import com.example.easysale.R;
 import com.example.easysale.adapter.UserAdapter;
 import com.example.easysale.databinding.MainActivityBinding;
 import com.example.easysale.model.User;
 import com.example.easysale.utils.ClickDebounce;
 import com.example.easysale.utils.KeyboardUtils;
-import com.example.easysale.utils.OnSwipeTouchListener;
-import com.example.easysale.utils.PaginationManager;
-import com.example.easysale.utils.SearchBarManager;
 import com.example.easysale.viewmodel.UserViewModel;
 
 import java.util.ArrayList;
@@ -35,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements
     private ClickDebounce fabClickDebounce;
     private ClickDebounce itemClickDebounce;
     private int currentPage = 1;
+    private GestureDetector gestureDetector;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +51,7 @@ public class MainActivity extends AppCompatActivity implements
     // Initialize and setup all components
     private void setupComponents() {
         setupRecyclerView();
+        setupGestureDetector();
         setupViewModel();
         setupToolbar();
         setupFab();
@@ -62,23 +66,6 @@ public class MainActivity extends AppCompatActivity implements
         userAdapter = new UserAdapter(new ArrayList<>(), this, this);
         binding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerView.setAdapter(userAdapter);
-
-        OnSwipeTouchListener swipeListener = new OnSwipeTouchListener() {
-            @Override
-            public void onSwipeLeft() {
-                runOnUiThread(() -> goToNextPageWithAnimation());
-            }
-
-            @Override
-            public void onSwipeRight() {
-                runOnUiThread(() -> goToPreviousPageWithAnimation());
-            }
-        };
-
-        binding.recyclerView.setOnTouchListener((v, event) -> {
-            boolean handled = swipeListener.onTouch(v, event);
-            return handled || v.onTouchEvent(event);
-        });
     }
 
     private void goToNextPageWithAnimation() {
@@ -101,6 +88,36 @@ public class MainActivity extends AppCompatActivity implements
         Log.d(TAG, "animatePageTransition: Going " + (goingForward ? "forward" : "backward"));
         int animationResource = goingForward ? R.anim.slide_left : R.anim.slide_right;
         binding.recyclerView.startAnimation(AnimationUtils.loadAnimation(this, animationResource));
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private void setupGestureDetector() {
+        gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
+            private static final int SWIPE_THRESHOLD = 100;
+            private static final int SWIPE_VELOCITY_THRESHOLD = 100;
+
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                float diffX = e2.getX() - e1.getX();
+                float diffY = e2.getY() - e1.getY();
+                if (Math.abs(diffX) > Math.abs(diffY) &&
+                        Math.abs(diffX) > SWIPE_THRESHOLD &&
+                        Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                    if (diffX > 0) {
+                        runOnUiThread(() -> goToPreviousPageWithAnimation());
+                    } else {
+                        runOnUiThread(() -> goToNextPageWithAnimation());
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        binding.recyclerView.setOnTouchListener((v, event) -> {
+            gestureDetector.onTouchEvent(event);
+            return false; // Allow the event to be processed by the RecyclerView as well
+        });
     }
 
     // Initialize ViewModel and observe LiveData
@@ -182,7 +199,6 @@ public class MainActivity extends AppCompatActivity implements
         Intent intent = new Intent(this, EditUserActivity.class);
         intent.putExtra(EditUserActivity.EXTRA_STATE, EditUserActivity.STATE_EDIT);
         intent.putExtra("USER", user);
-        Log.d(TAG, "handleItemClick: Launching EditUserActivity with user - " + user.toString());
         editUserLauncher.launch(intent);
     }
 
@@ -198,7 +214,7 @@ public class MainActivity extends AppCompatActivity implements
                         Log.d(TAG, "editUserLauncher: Received updated user - " + updatedUser.toString());
                         userViewModel.updateLocalUser(updatedUser);
                     } else {
-                        Log.d(TAG, "editUserLauncher: No updated user data received. Loading all users.");
+                        Log.d(TAG, "editUserLauncher: No updated user data received. Reloading all users.");
                         userViewModel.loadAllUsers();
                     }
                     // Clear the search bar when returning from EditUserActivity

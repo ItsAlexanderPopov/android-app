@@ -83,7 +83,7 @@
 
     </HorizontalScrollView>
 
-    <com.example.easysale.utils.CustomRecyclerView
+    <com.example.easysale.homepage.CustomRecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="0dp"
         android:layout_height="0dp"

@@ -1,10 +1,9 @@
-package com.example.easysale.utils;
+package com.example.easysale.homepage;
 
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.MotionEvent;
 
-import com.example.easysale.MainActivity;
 import com.example.easysale.databinding.MainActivityBinding;
 import com.example.easysale.viewmodel.UserViewModel;
 
