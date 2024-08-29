@@ -49,6 +49,7 @@ public class MainActivity extends AppCompatActivity implements
         setupViewModel();
         setupToolbar();
         setupFab();
+        setupItemClick();
         searchBarManager = new SearchBarManager(this, binding, userViewModel);
         paginationManager = new PaginationManager(this, binding, userViewModel);
     }
@@ -132,56 +133,55 @@ public class MainActivity extends AppCompatActivity implements
 
     // Setup FAB for adding new user
     private void setupFab() {
-        fabClickDebounce = ClickDebounce.wrap(v -> {
+        fabClickDebounce = ClickDebounce.wrap(param -> {
             KeyboardUtils.hideKeyboard(this);
             Intent intent = new Intent(MainActivity.this, EditUserActivity.class);
             intent.putExtra(EditUserActivity.EXTRA_STATE, EditUserActivity.STATE_ADD);
             editUserLauncher.launch(intent);
         });
-        binding.addImageView.setOnClickListener(fabClickDebounce);
+        binding.addImageView.setOnClickListener(v -> fabClickDebounce.onClick(null));
+    }
+
+    private void setupItemClick() {
+        itemClickDebounce = ClickDebounce.wrap(this::handleItemClick);
     }
 
     // Handle item click from adapter
     @Override
     public void onItemClick(User user) {
-        if (itemClickDebounce == null) {
-            itemClickDebounce = ClickDebounce.wrap(v -> {
-                KeyboardUtils.hideKeyboard(this);
-                Intent intent = new Intent(this, EditUserActivity.class);
-                intent.putExtra(EditUserActivity.EXTRA_STATE, EditUserActivity.STATE_EDIT);
-                intent.putExtra("USER", user);
-                editUserLauncher.launch(intent);
-            });
-        }
-        itemClickDebounce.onClick(binding.getRoot());  // Using root view as a dummy
+        itemClickDebounce.onClick(user);
+    }
+
+    // Handle the actual item click logic
+    private void handleItemClick(User user) {
+        Log.d(TAG, "handleItemClick: User selected - " + user.toString());
+        KeyboardUtils.hideKeyboard(this);
+        Intent intent = new Intent(this, EditUserActivity.class);
+        intent.putExtra(EditUserActivity.EXTRA_STATE, EditUserActivity.STATE_EDIT);
+        intent.putExtra("USER", user);
+        Log.d(TAG, "handleItemClick: Launching EditUserActivity with user - " + user.toString());
+        editUserLauncher.launch(intent);
     }
 
     // ActivityResultLauncher for handling EditUserActivity results
     private final ActivityResultLauncher<Intent> editUserLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-                Log.d(TAG, "Received result from EditUserActivity. Result code: " + result.getResultCode());
+                Log.d(TAG, "editUserLauncher: Received result from EditUserActivity. Result code: " + result.getResultCode());
                 if (result.getResultCode() == RESULT_OK) {
                     Intent data = result.getData();
                     if (data != null && data.hasExtra("UPDATED_USER")) {
                         User updatedUser = (User) data.getSerializableExtra("UPDATED_USER");
-                        Log.d(TAG, "Received updated user: " + updatedUser.toString());
+                        Log.d(TAG, "editUserLauncher: Received updated user - " + updatedUser.toString());
                         userViewModel.updateLocalUser(updatedUser);
                     } else {
-                        Log.d(TAG, "No updated user data received. Loading all users.");
+                        Log.d(TAG, "editUserLauncher: No updated user data received. Loading all users.");
                         userViewModel.loadAllUsers();
                     }
                     // Clear the search bar when returning from EditUserActivity
                     searchBarManager.clearSearchBar();
                 } else {
-                    Log.d(TAG, "EditUserActivity did not return RESULT_OK");
-                }
-                // Reset the debounce for both FAB and item clicks
-                if (fabClickDebounce != null) {
-                    fabClickDebounce.reset();
-                }
-                if (itemClickDebounce != null) {
-                    itemClickDebounce.reset();
+                    Log.d(TAG, "editUserLauncher: EditUserActivity did not return RESULT_OK");
                 }
             });
 }
