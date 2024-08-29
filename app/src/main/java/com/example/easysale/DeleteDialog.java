@@ -57,11 +57,11 @@ public class DeleteDialog extends Dialog {
             layoutParams.copyFrom(window.getAttributes());
             int screenWidth = getContext().getResources().getDisplayMetrics().widthPixels;
             int screenHeight = getContext().getResources().getDisplayMetrics().heightPixels;
-            layoutParams.width = (int) (screenWidth * 0.9); // dialog width as 90% of screen width
+            layoutParams.width = (int) (screenWidth * 0.9);
             layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT;
             // Position the dialog below the top of the screen with a margin
             layoutParams.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-            int topMargin = (int) (screenHeight * 0.15); // 15% of screen height as top margin
+            int topMargin = (int) (screenHeight * 0.15);
             layoutParams.y = topMargin;
             window.setAttributes(layoutParams);
             window.setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
