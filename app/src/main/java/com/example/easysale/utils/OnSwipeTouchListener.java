@@ -1,6 +1,8 @@
 package com.example.easysale.utils;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -12,13 +14,14 @@ public class OnSwipeTouchListener implements View.OnTouchListener {
         gestureDetector = new GestureDetector(context, new GestureListener());
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         return gestureDetector.onTouchEvent(event);
     }
 
     private final class GestureListener extends GestureDetector.SimpleOnGestureListener {
-        private static final int SWIPE_THRESHOLD = 100;
+        private static final int SWIPE_THRESHOLD = 500;
         private static final int SWIPE_VELOCITY_THRESHOLD = 100;
 
         @Override
@@ -43,7 +46,7 @@ public class OnSwipeTouchListener implements View.OnTouchListener {
                     }
                 }
             } catch (Exception exception) {
-                exception.printStackTrace();
+                Log.e("OnSwipeTouchListener", exception.toString());
             }
             return result;
         }

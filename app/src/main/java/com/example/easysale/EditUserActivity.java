@@ -60,9 +60,11 @@ public class EditUserActivity extends AppCompatActivity {
             state = intent.getStringExtra(EXTRA_STATE);
             if (STATE_EDIT.equals(state)) {
                 currentUser = (User) intent.getSerializableExtra("USER");
+                Log.d(TAG, "onCreate: Editing user - " + (currentUser != null ? currentUser.toString() : "null"));
             } else if (STATE_ADD.equals(state)) {
                 currentUser = new User();
                 currentUser.setAvatar(DEFAULT_AVATAR);
+                Log.d(TAG, "onCreate: Adding new user");
             }
         }
 
@@ -88,18 +90,22 @@ public class EditUserActivity extends AppCompatActivity {
     }
 
     private void loadUserData() {
+        Log.d(TAG, "loadUserData: State = " + state + ", CurrentUser = " + (currentUser != null ? currentUser.toString() : "null"));
         if (STATE_EDIT.equals(state) && currentUser != null) {
             binding.editTextFirstName.setText(currentUser.getFirstName());
             binding.editTextLastName.setText(currentUser.getLastName());
             binding.editTextEmail.setText(currentUser.getEmail());
             loadAvatarImage(currentUser.getAvatar());
+            Log.d(TAG, "loadUserData: Loaded user data for editing - " + currentUser.toString());
         } else if (STATE_ADD.equals(state)) {
             binding.editTextFirstName.setText("");
             binding.editTextLastName.setText("");
             binding.editTextEmail.setText("");
             loadAvatarImage(DEFAULT_AVATAR);
+            Log.d(TAG, "loadUserData: Prepared for adding new user");
         } else {
             showError("Invalid state or user data not found!");
+            Log.e(TAG, "loadUserData: Invalid state or user data not found!");
         }
     }
 
@@ -111,8 +117,8 @@ public class EditUserActivity extends AppCompatActivity {
     }
 
     private void setupSaveButton() {
-        saveButtonDebounce = ClickDebounce.wrap(v -> saveUser());
-        binding.buttonSave.setOnClickListener(saveButtonDebounce);
+        saveButtonDebounce = ClickDebounce.wrap(param -> saveUser());
+        binding.buttonSave.setOnClickListener(v -> saveButtonDebounce.onClick(null));
     }
 
     private void setupBackNavigation() {
@@ -236,7 +242,6 @@ public class EditUserActivity extends AppCompatActivity {
 
         validateInputs(firstName, lastName, email, isValid -> {
             if (isValid) {
-
                 KeyboardUtils.hideKeyboard(this);
 
                 currentUser.setFirstName(firstName);
@@ -251,19 +256,19 @@ public class EditUserActivity extends AppCompatActivity {
                     createUser();
                 }
             } else {
-                saveButtonDebounce.reset();
                 binding.buttonSave.setEnabled(true);
             }
         });
     }
 
+
     private void updateUser() {
-        Log.d(TAG, "Updating user: " + currentUser.toString());
+        Log.d(TAG, "updateUser: Updating user - " + currentUser.toString());
         userViewModel.updateUser(currentUser, new UserViewModel.OnUserUpdateListener() {
             @Override
             public void onUserUpdated() {
                 runOnUiThread(() -> {
-                    Log.d(TAG, "User updated successfully. Sending result back.");
+                    Log.d(TAG, "onUserUpdated: User updated successfully - " + currentUser.toString());
                     Toast.makeText(EditUserActivity.this, "User updated successfully", Toast.LENGTH_SHORT).show();
                     Intent resultIntent = new Intent();
                     resultIntent.putExtra("UPDATED_USER", currentUser);
@@ -275,9 +280,8 @@ public class EditUserActivity extends AppCompatActivity {
             @Override
             public void onError(String error) {
                 runOnUiThread(() -> {
-                    Log.e(TAG, "Update error: " + error);
+                    Log.e(TAG, "onError: Update failed - " + error);
                     showError("Update failed: " + error);
-                    saveButtonDebounce.reset();
                     binding.buttonSave.setEnabled(true);
                 });
             }
@@ -301,7 +305,6 @@ public class EditUserActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     showError("Creation failed: " + error);
                     Log.e("EditUserActivity", "Creation error: " + error);
-                    saveButtonDebounce.reset();
                     binding.buttonSave.setEnabled(true);
                 });
             }
@@ -327,5 +330,11 @@ public class EditUserActivity extends AppCompatActivity {
 
     private interface ValidationCallback {
         void onValidationComplete(boolean isValid);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "onDestroy: Activity is being destroyed");
     }
 }

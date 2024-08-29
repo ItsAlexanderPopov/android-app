@@ -21,17 +21,20 @@ import java.util.stream.Collectors;
 
 public class UserViewModel extends AndroidViewModel {
     private static final String TAG = "UserViewModel";
-    private FetchUsers repository;
-    private UserDao userDao;
-    private ExecutorService executor;
-    private MutableLiveData<List<User>> users = new MutableLiveData<>();
-    private MutableLiveData<Integer> totalPages = new MutableLiveData<>();
-    private MutableLiveData<Integer> totalUsers = new MutableLiveData<>();
-    private MutableLiveData<Integer> currentPage = new MutableLiveData<>(1);
-    private MutableLiveData<Integer> selectedPage = new MutableLiveData<>(1);
-    private MutableLiveData<Boolean> paginationUpdated = new MutableLiveData<>();
     private static final int USERS_PER_PAGE = 6;
-    private List<User> allUsers = new ArrayList<>();
+
+    private final FetchUsers repository;
+    private final UserDao userDao;
+    private final ExecutorService executor;
+
+    private final MutableLiveData<List<User>> users = new MutableLiveData<>();
+    private final MutableLiveData<Integer> totalPages = new MutableLiveData<>();
+    private final MutableLiveData<Integer> totalUsers = new MutableLiveData<>();
+    private final MutableLiveData<Integer> currentPage = new MutableLiveData<>(1);
+    private final MutableLiveData<Integer> selectedPage = new MutableLiveData<>(1);
+    private final MutableLiveData<Boolean> paginationUpdated = new MutableLiveData<>();
+
+    private final List<User> allUsers = new ArrayList<>();
     private List<User> filteredUsers = new ArrayList<>();
     private String currentSearchQuery = "";
     private int lastKnownPage = 1;
@@ -91,30 +94,21 @@ public class UserViewModel extends AndroidViewModel {
     }
 
     public void updateLocalUser(User updatedUser) {
-        Log.d(TAG, "Updating local user: " + updatedUser.toString());
-
-        // Update in allUsers
-        for (int i = 0; i < allUsers.size(); i++) {
-            if (allUsers.get(i).getId() == updatedUser.getId()) {
-                allUsers.set(i, updatedUser);
-                Log.d(TAG, "Updated user in allUsers list at index: " + i);
-                break;
-            }
-        }
-
-        // Update in filteredUsers
-        for (int i = 0; i < filteredUsers.size(); i++) {
-            if (filteredUsers.get(i).getId() == updatedUser.getId()) {
-                filteredUsers.set(i, updatedUser);
-                Log.d(TAG, "Updated user in filteredUsers list at index: " + i);
-                break;
-            }
-        }
-
-        int currentPageValue = currentPage.getValue() != null ? currentPage.getValue() : 1;
-        Log.d(TAG, "Refreshing current page: " + currentPageValue);
-        loadPage(currentPageValue);
+        Log.d(TAG, "Updating local user: " + updatedUser);
+        updateUserInList(allUsers, updatedUser);
+        updateUserInList(filteredUsers, updatedUser);
+        loadPage(currentPage.getValue() != null ? currentPage.getValue() : 1);
         paginationUpdated.postValue(true);
+    }
+
+    private void updateUserInList(List<User> userList, User updatedUser) {
+        for (int i = 0; i < userList.size(); i++) {
+            if (userList.get(i).getId() == updatedUser.getId()) {
+                userList.set(i, updatedUser);
+                Log.d(TAG, "Updated user in list at index: " + i);
+                break;
+            }
+        }
     }
 
     public void searchUsers(String query) {
@@ -127,19 +121,13 @@ public class UserViewModel extends AndroidViewModel {
                 filteredUsers = new ArrayList<>(allUsers);
             } else {
                 filteredUsers = allUsers.stream()
-                        .filter(user -> user.getFirstName().toLowerCase().contains(lowercaseQuery) ||
-                                user.getLastName().toLowerCase().contains(lowercaseQuery) ||
-                                user.getEmail().toLowerCase().contains(lowercaseQuery))
+                        .filter(user -> userMatchesSearch(user, lowercaseQuery))
                         .collect(Collectors.toList());
             }
 
             Log.d(TAG, "Found " + filteredUsers.size() + " matching users");
-
             updatePagination();
-
-            // Always reset to page 1 after a search
             loadPage(1);
-
             paginationUpdated.postValue(true);
         } catch (Exception e) {
             Log.e(TAG, "Error during search: ", e);
@@ -264,7 +252,7 @@ public class UserViewModel extends AndroidViewModel {
             @Override
             public void onUserCreated(User createdUser) {
                 allUsers.add(0, createdUser);
-                if (currentSearchQuery.isEmpty() || userMatchesSearch(createdUser)) {
+                if (currentSearchQuery.isEmpty() || userMatchesSearch(createdUser, currentSearchQuery.toLowerCase())) {
                     filteredUsers.add(0, createdUser);
                 }
                 updatePagination();
@@ -280,8 +268,7 @@ public class UserViewModel extends AndroidViewModel {
         });
     }
 
-    private boolean userMatchesSearch(User user) {
-        String lowercaseQuery = currentSearchQuery.toLowerCase().trim();
+    private boolean userMatchesSearch(User user, String lowercaseQuery) {
         return user.getFirstName().toLowerCase().contains(lowercaseQuery) ||
                 user.getLastName().toLowerCase().contains(lowercaseQuery) ||
                 user.getEmail().toLowerCase().contains(lowercaseQuery);

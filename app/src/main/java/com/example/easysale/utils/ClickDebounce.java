@@ -1,28 +1,42 @@
 package com.example.easysale.utils;
 
-import android.view.View;
+import android.os.Handler;
+import android.os.Looper;
 
-public class ClickDebounce implements View.OnClickListener {
+public class ClickDebounce<T> {
+    private static final long DEFAULT_DEBOUNCE_TIME = 1000;
+    private final long debounceTime;
     private boolean isClickable = true;
-    private final View.OnClickListener wrappedListener;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final DebounceClickListener<T> listener;
 
-    public ClickDebounce(View.OnClickListener listener) {
-        this.wrappedListener = listener;
+    public interface DebounceClickListener<T> {
+        void onDebounceClick(T param);
     }
 
-    @Override
-    public void onClick(View v) {
+    private ClickDebounce(DebounceClickListener<T> listener, long debounceTime) {
+        this.listener = listener;
+        this.debounceTime = debounceTime;
+    }
+
+    public void onClick(T param) {
         if (isClickable) {
             isClickable = false;
-            wrappedListener.onClick(v);
+            listener.onDebounceClick(param);
+            handler.postDelayed(this::reset, debounceTime);
         }
     }
 
-    public void reset() {
+    private void reset() {
         isClickable = true;
     }
 
-    public static ClickDebounce wrap(View.OnClickListener listener) {
-        return new ClickDebounce(listener);
+    public static <T> ClickDebounce<T> wrap(DebounceClickListener<T> listener) {
+        return new ClickDebounce<>(listener, DEFAULT_DEBOUNCE_TIME);
+    }
+
+    // In case we want to use custom time for debounce
+    public static <T> ClickDebounce<T> wrap(DebounceClickListener<T> listener, long customDebounceTime) {
+        return new ClickDebounce<>(listener, customDebounceTime);
     }
 }
