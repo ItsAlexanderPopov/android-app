@@ -19,12 +19,14 @@ import androidx.lifecycle.ViewModelProvider;
 import com.bumptech.glide.Glide;
 import com.example.easysale.databinding.ActivityEditUserBinding;
 import com.example.easysale.model.User;
+import com.example.easysale.utils.ClickDebounce;
 import com.example.easysale.utils.KeyboardUtils;
 import com.example.easysale.viewmodel.UserViewModel;
 
 public class EditUserActivity extends AppCompatActivity {
     private static final String TAG = "EditUserActivity";
     private ActivityEditUserBinding binding;
+    private ClickDebounce saveButtonDebounce;
     private UserViewModel userViewModel;
     private User currentUser;
     private String state;
@@ -32,7 +34,6 @@ public class EditUserActivity extends AppCompatActivity {
     public static final String STATE_EDIT = "Edit";
     public static final String STATE_ADD = "Add";
     private static final String DEFAULT_AVATAR = "android.resource://com.example.easysale/drawable/placeholder";
-    private boolean isSaving = false;
 
 
     private final ActivityResultLauncher<Intent> pickImageLauncher = registerForActivityResult(
@@ -110,13 +111,8 @@ public class EditUserActivity extends AppCompatActivity {
     }
 
     private void setupSaveButton() {
-        binding.buttonSave.setOnClickListener(v -> {
-            if (!isSaving) {
-                isSaving = true;
-                binding.buttonSave.setEnabled(false);
-                saveUser();
-            }
-        });
+        saveButtonDebounce = ClickDebounce.wrap(v -> saveUser());
+        binding.buttonSave.setOnClickListener(saveButtonDebounce);
     }
 
     private void setupBackNavigation() {
@@ -168,31 +164,6 @@ public class EditUserActivity extends AppCompatActivity {
     private void openGallery() {
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         pickImageLauncher.launch(intent);
-    }
-
-    private void saveUser() {
-        String firstName = cleanName(binding.editTextFirstName.getText().toString());
-        String lastName = cleanName(binding.editTextLastName.getText().toString());
-        String email = binding.editTextEmail.getText().toString().trim();
-
-        validateInputs(firstName, lastName, email, isValid -> {
-            if (isValid) {
-                // Hide the keyboard
-                KeyboardUtils.hideKeyboard(this);
-
-                currentUser.setFirstName(firstName);
-                currentUser.setLastName(lastName);
-                currentUser.setEmail(email);
-
-                if (STATE_EDIT.equals(state)) {
-                    updateUser();
-                } else if (STATE_ADD.equals(state)) {
-                    createUser();
-                }
-            } else {
-                resetSaveButtonState();
-            }
-        });
     }
 
     private String cleanName(String name) {
@@ -258,7 +229,33 @@ public class EditUserActivity extends AppCompatActivity {
         return email.matches(emailPattern);
     }
 
+    private void saveUser() {
+        String firstName = cleanName(binding.editTextFirstName.getText().toString());
+        String lastName = cleanName(binding.editTextLastName.getText().toString());
+        String email = binding.editTextEmail.getText().toString().trim();
 
+        validateInputs(firstName, lastName, email, isValid -> {
+            if (isValid) {
+
+                KeyboardUtils.hideKeyboard(this);
+
+                currentUser.setFirstName(firstName);
+                currentUser.setLastName(lastName);
+                currentUser.setEmail(email);
+
+                binding.buttonSave.setEnabled(false);
+
+                if (STATE_EDIT.equals(state)) {
+                    updateUser();
+                } else if (STATE_ADD.equals(state)) {
+                    createUser();
+                }
+            } else {
+                saveButtonDebounce.reset();
+                binding.buttonSave.setEnabled(true);
+            }
+        });
+    }
 
     private void updateUser() {
         Log.d(TAG, "Updating user: " + currentUser.toString());
@@ -280,11 +277,13 @@ public class EditUserActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     Log.e(TAG, "Update error: " + error);
                     showError("Update failed: " + error);
-                    resetSaveButtonState();
+                    saveButtonDebounce.reset();
+                    binding.buttonSave.setEnabled(true);
                 });
             }
         });
     }
+
 
     private void createUser() {
         userViewModel.createUser(currentUser, new UserViewModel.OnUserCreateListener() {
@@ -302,15 +301,11 @@ public class EditUserActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     showError("Creation failed: " + error);
                     Log.e("EditUserActivity", "Creation error: " + error);
-                    resetSaveButtonState();
+                    saveButtonDebounce.reset();
+                    binding.buttonSave.setEnabled(true);
                 });
             }
         });
-    }
-
-    private void resetSaveButtonState() {
-        isSaving = false;
-        binding.buttonSave.setEnabled(true);
     }
 
     private void showError(String error) {
@@ -320,7 +315,6 @@ public class EditUserActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
-            // Hide the keyboard when the back button is pressed
             KeyboardUtils.hideKeyboard(this);
             // Delay the back navigation slightly to ensure keyboard is hidden
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
