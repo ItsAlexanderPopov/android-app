@@ -48,17 +48,35 @@ public class MainActivity extends AppCompatActivity implements
         setupRecyclerView();
         setupViewModel();
         setupToolbar();
-        setupSwipeGesture();
         setupFab();
         searchBarManager = new SearchBarManager(this, binding, userViewModel);
         paginationManager = new PaginationManager(this, binding, userViewModel);
     }
 
     // Setup RecyclerView with adapter
+    @SuppressLint("ClickableViewAccessibility")
     private void setupRecyclerView() {
+        Log.d(TAG, "Setting up RecyclerView");
         userAdapter = new UserAdapter(new ArrayList<>(), this, this);
         binding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerView.setAdapter(userAdapter);
+
+        OnSwipeTouchListener swipeListener = new OnSwipeTouchListener() {
+            @Override
+            public void onSwipeLeft() {
+                runOnUiThread(() -> paginationManager.goToNextPage());
+            }
+
+            @Override
+            public void onSwipeRight() {
+                runOnUiThread(() -> paginationManager.goToPreviousPage());
+            }
+        };
+
+        binding.recyclerView.setOnTouchListener((v, event) -> {
+            boolean handled = swipeListener.onTouch(v, event);
+            return handled || v.onTouchEvent(event);
+        });
     }
 
     // Initialize ViewModel and observe LiveData
@@ -99,23 +117,6 @@ public class MainActivity extends AppCompatActivity implements
             binding.toolbar.addView(logo);
         }
     }
-
-    // Setup swipe gesture for pagination
-    @SuppressLint("ClickableViewAccessibility")
-    private void setupSwipeGesture() {
-        binding.recyclerView.setOnTouchListener(new OnSwipeTouchListener(this) {
-            @Override
-            public void onSwipeLeft() {
-                paginationManager.goToNextPage();
-            }
-
-            @Override
-            public void onSwipeRight() {
-                paginationManager.goToPreviousPage();
-            }
-        });
-    }
-
 
     // Show delete confirmation dialog
     private void showDeleteConfirmationDialog(User user) {

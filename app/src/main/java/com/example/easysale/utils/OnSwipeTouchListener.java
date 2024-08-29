@@ -1,57 +1,62 @@
 package com.example.easysale.utils;
 
-import android.content.Context;
-import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 
 public class OnSwipeTouchListener implements View.OnTouchListener {
-    private final GestureDetector gestureDetector;
-
-    public OnSwipeTouchListener(Context context) {
-        gestureDetector = new GestureDetector(context, new GestureListener());
-    }
+    private float startX;
+    private float startY;
+    private static final int SWIPE_THRESHOLD = 100;
+    private static final float MAX_VERTICAL_RATIO = 2.0f;
+    private boolean isSwipeDetected = false;
+    private float lastTouchX;
+    private float lastTouchY;
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
-        return gestureDetector.onTouchEvent(event);
-    }
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                startX = lastTouchX = event.getX();
+                startY = lastTouchY = event.getY();
+                isSwipeDetected = false;
+                return false;
+            case MotionEvent.ACTION_MOVE:
+                float currentX = event.getX();
+                float currentY = event.getY();
+                float diffX = currentX - startX;
+                float diffY = currentY - startY;
+                lastTouchX = currentX;
+                lastTouchY = currentY;
 
-    private final class GestureListener extends GestureDetector.SimpleOnGestureListener {
-        private static final int SWIPE_THRESHOLD = 100;
-        private static final int SWIPE_VELOCITY_THRESHOLD = 100;
-
-        @Override
-        public boolean onDown(MotionEvent e) {
-            return true;
-        }
-
-        @Override
-        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-            boolean result = false;
-            try {
-                float diffY = e2.getY() - e1.getY();
-                float diffX = e2.getX() - e1.getX();
-                if (Math.abs(diffX) > Math.abs(diffY)) {
-                    if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                if (!isSwipeDetected) {
+                    float absX = Math.abs(diffX);
+                    float absY = Math.abs(diffY);
+                    if (absX > SWIPE_THRESHOLD && absY / absX <= MAX_VERTICAL_RATIO) {
+                        isSwipeDetected = true;
                         if (diffX > 0) {
                             onSwipeRight();
                         } else {
                             onSwipeLeft();
                         }
-                        result = true;
+                        return true;
                     }
                 }
-            } catch (Exception exception) {
-                exception.printStackTrace();
-            }
-            return result;
+                return isSwipeDetected;
+            case MotionEvent.ACTION_UP:
+                if (isSwipeDetected) {
+                    isSwipeDetected = false;
+                    return true;
+                }
+                return false;
         }
+        return false;
     }
 
     public void onSwipeRight() {
+        // Override this method in your implementation
     }
 
     public void onSwipeLeft() {
+        // Override this method in your implementation
     }
 }
