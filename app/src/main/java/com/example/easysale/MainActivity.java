@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -33,6 +34,7 @@ public class MainActivity extends AppCompatActivity implements
     private PaginationManager paginationManager;
     private ClickDebounce fabClickDebounce;
     private ClickDebounce itemClickDebounce;
+    private int currentPage = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,7 +59,6 @@ public class MainActivity extends AppCompatActivity implements
     // Setup RecyclerView with adapter
     @SuppressLint("ClickableViewAccessibility")
     private void setupRecyclerView() {
-        Log.d(TAG, "Setting up RecyclerView");
         userAdapter = new UserAdapter(new ArrayList<>(), this, this);
         binding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerView.setAdapter(userAdapter);
@@ -65,12 +66,12 @@ public class MainActivity extends AppCompatActivity implements
         OnSwipeTouchListener swipeListener = new OnSwipeTouchListener() {
             @Override
             public void onSwipeLeft() {
-                runOnUiThread(() -> paginationManager.goToNextPage());
+                runOnUiThread(() -> goToNextPageWithAnimation());
             }
 
             @Override
             public void onSwipeRight() {
-                runOnUiThread(() -> paginationManager.goToPreviousPage());
+                runOnUiThread(() -> goToPreviousPageWithAnimation());
             }
         };
 
@@ -78,6 +79,28 @@ public class MainActivity extends AppCompatActivity implements
             boolean handled = swipeListener.onTouch(v, event);
             return handled || v.onTouchEvent(event);
         });
+    }
+
+    private void goToNextPageWithAnimation() {
+        if (currentPage < userViewModel.getTotalPages().getValue()) {
+            currentPage++;
+            animatePageTransition(true);
+            paginationManager.goToNextPage();
+        }
+    }
+
+    private void goToPreviousPageWithAnimation() {
+        if (currentPage > 1) {
+            currentPage--;
+            animatePageTransition(false);
+            paginationManager.goToPreviousPage();
+        }
+    }
+
+    private void animatePageTransition(boolean goingForward) {
+        Log.d(TAG, "animatePageTransition: Going " + (goingForward ? "forward" : "backward"));
+        int animationResource = goingForward ? R.anim.slide_left : R.anim.slide_right;
+        binding.recyclerView.startAnimation(AnimationUtils.loadAnimation(this, animationResource));
     }
 
     // Initialize ViewModel and observe LiveData

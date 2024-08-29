@@ -1,5 +1,6 @@
 package com.example.easysale.utils;
 
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -31,6 +32,7 @@ public class OnSwipeTouchListener implements View.OnTouchListener {
                 if (!isSwipeDetected) {
                     float absX = Math.abs(diffX);
                     float absY = Math.abs(diffY);
+                    Log.d("Swipe", "absX: " + absX);
                     if (absX > SWIPE_THRESHOLD && absY / absX <= MAX_VERTICAL_RATIO) {
                         isSwipeDetected = true;
                         if (diffX > 0) {
