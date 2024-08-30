@@ -4,7 +4,8 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class RetrofitClient {
-    private static final String BASE_URL = "https://reqres.in/api/"; // Usually I would use dotenv for this
+    // Usually APIs and Endpoints are stored as environment variables but not in this case
+    private static final String BASE_URL = "https://reqres.in/api/";
     private static Retrofit retrofit = null;
 
     public static Retrofit getClient(){
