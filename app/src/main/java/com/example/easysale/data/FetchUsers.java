@@ -106,7 +106,7 @@ public class FetchUsers {
             @Override
             public void onResponse(@NonNull Call<User> call, @NonNull Response<User> response) {
                 Log.d(TAG, "createUser: Response code: " + response.code());
-                Log.d(TAG, "createUser: Created user name: " + response.body().getFirstName() + " " + response.body().getLastName());
+                Log.d(TAG, "createUser: " + response.body().getFirstName() + " " + response.body().getLastName() + ", email: " + response.body().getEmail());
                 if (response.isSuccessful() && response.body() != null) {
                     // Use the data returned from the API
                     User createdUser = response.body();
@@ -136,9 +136,7 @@ public class FetchUsers {
             @Override
             public void onResponse(@NonNull Call<User> call, @NonNull Response<User> response) {
                 Log.d(TAG, "updateUser: Response code: " + response.code());
-                Log.d(TAG, "updateUser: updated user name: "
-                        + response.body().getFirstName() + " " + response.body().getLastName()
-                        + " email: " + response.body().getEmail() + "");
+                Log.d(TAG, "updateUser: name: " + response.body().getFirstName() + " " + response.body().getLastName() + ", email: " + response.body().getEmail() + "");
                 if (response.isSuccessful() && response.body() != null) {
                     User updatedUser = response.body();
                     // Update only the fields that the API returns
@@ -165,6 +163,8 @@ public class FetchUsers {
             @Override
             public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                 Log.d(TAG, "deleteUser: Response code: " + response.code());
+                Log.d(TAG, "deleteUser: " + user.getFirstName() + " " + user.getLastName());
+
                 if (response.isSuccessful()) {
                     AsyncTask.execute(() -> userDao.delete(user));
                     listener.onUserDeleted();
