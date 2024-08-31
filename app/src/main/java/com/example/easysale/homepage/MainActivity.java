@@ -222,7 +222,7 @@ public class MainActivity extends AppCompatActivity implements
                     Intent data = result.getData();
                     if (data != null && data.hasExtra("UPDATED_USER")) {
                         User updatedUser = (User) data.getSerializableExtra("UPDATED_USER");
-                        Log.d(TAG, "editUserLauncher: Received updated user - " + updatedUser.toString());
+                        Log.d(TAG, "editUserLauncher: Received updated user - " + updatedUser.getFirstName() + " " + updatedUser.getLastName());
                         userViewModel.updateLocalUser(updatedUser);
                     } else {
                         Log.d(TAG, "editUserLauncher: No updated user data received. Reloading all users.");

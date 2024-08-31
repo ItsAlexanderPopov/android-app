@@ -100,6 +100,7 @@ public class PaginationManager {
                 updateButtonState(pageButton, page == currentPage);
                 if (page == currentPage) {
                     targetScrollX = totalWidth - (binding.paginationScrollView.getWidth() - buttonWidth) / 2;
+                    scrollToTop();
                 }
                 totalWidth += buttonWidth;
             }
@@ -133,6 +134,7 @@ public class PaginationManager {
         Integer totalPages = userViewModel.getTotalPages().getValue();
         if (currentPage != null && totalPages != null && currentPage < totalPages) {
             userViewModel.loadPage(currentPage + 1);
+            scrollToTop();
         }
     }
 
@@ -141,6 +143,14 @@ public class PaginationManager {
         Integer currentPage = userViewModel.getCurrentPage().getValue();
         if (currentPage != null && currentPage > 1) {
             userViewModel.loadPage(currentPage - 1);
+            scrollToTop();
         }
+    }
+
+    private void scrollToTop() {
+        binding.recyclerView.post(() -> {
+            binding.recyclerView.scrollToPosition(0);
+            Log.d(TAG, "scrollToTop: RecyclerView scrolled to top");
+        });
     }
 }
