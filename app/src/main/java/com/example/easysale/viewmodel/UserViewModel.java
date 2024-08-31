@@ -13,14 +13,13 @@ import com.example.easysale.data.UserDatabase;
 import com.example.easysale.model.User;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 public class UserViewModel extends AndroidViewModel {
     private static final String TAG = "UserViewModel";
+    // Change this if you want different amount of users per page
     private static final int USERS_PER_PAGE = 6;
 
     private final FetchUsers repository;

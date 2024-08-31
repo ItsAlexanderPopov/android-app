@@ -4,8 +4,8 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.GestureDetector;
-import android.view.MotionEvent;
+import android.view.View;
+import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
 import androidx.activity.result.ActivityResultLauncher;
@@ -34,116 +34,118 @@ public class MainActivity extends AppCompatActivity implements
     private MainActivityBinding binding;
     private SearchBarManager searchBarManager;
     private PaginationManager paginationManager;
+    private RecyclerGestureHandler gestureHandler;
     private ClickDebounce fabClickDebounce;
     private ClickDebounce itemClickDebounce;
     private int currentPage = 1;
-    private GestureDetector gestureDetector;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = MainActivityBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-
         setupComponents();
     }
 
-    // Initialize and setup all components
     private void setupComponents() {
         setupRecyclerView();
-        setupGestureDetector();
+        setupGestureHandler();
         setupViewModel();
         setupToolbar();
         setupFab();
         setupItemClick();
         searchBarManager = new SearchBarManager(this, binding, userViewModel);
         paginationManager = new PaginationManager(this, binding, userViewModel);
+        Log.d(TAG, "setupComponents: All components set up successfully");
     }
 
-    // Setup RecyclerView with adapter
-    @SuppressLint("ClickableViewAccessibility")
     private void setupRecyclerView() {
         userAdapter = new UserAdapter(new ArrayList<>(), this, this);
         binding.recyclerView.setLayoutManager(new LinearLayoutManager(this));
         binding.recyclerView.setAdapter(userAdapter);
+        binding.recyclerView.setNestedScrollingEnabled(false);
     }
+
+    private void setupGestureHandler() {
+
+        if (gestureHandler != null) {
+            binding.recyclerView.removeOnItemTouchListener(gestureHandler);
+        }
+
+        gestureHandler = new RecyclerGestureHandler(
+                new RecyclerGestureHandler.OnSwipeListener() {
+                    @Override
+                    public void onSwipeLeft() {
+                        Log.d(TAG, "onSwipeLeft: Swiped left, going to next page");
+                        goToNextPageWithAnimation();
+                    }
+
+                    @Override
+                    public void onSwipeRight() {
+                        Log.d(TAG, "onSwipeRight: Swiped right, going to previous page");
+                        goToPreviousPageWithAnimation();
+                    }
+                },
+                (view, position) -> {
+                    User user = userAdapter.getUsers().get(position);
+                    Log.d(TAG, "onItemClick: Clicked on user: " + user.getFirstName() + " " + user.getLastName());
+                    handleItemClick(user);
+                }
+        );
+
+        binding.recyclerView.addOnItemTouchListener(gestureHandler);
+    }
+
 
     private void goToNextPageWithAnimation() {
         if (currentPage < userViewModel.getTotalPages().getValue()) {
             currentPage++;
+            Log.d(TAG, "goToNextPageWithAnimation: Moving to page " + currentPage);
             animatePageTransition(true);
             paginationManager.goToNextPage();
+        } else {
+            Log.d(TAG, "goToNextPageWithAnimation: Already at last page, cannot go forward");
         }
     }
 
     private void goToPreviousPageWithAnimation() {
         if (currentPage > 1) {
             currentPage--;
+            Log.d(TAG, "goToPreviousPageWithAnimation: Moving to page " + currentPage);
             animatePageTransition(false);
             paginationManager.goToPreviousPage();
+        } else {
+            Log.d(TAG, "goToPreviousPageWithAnimation: Already at first page, cannot go back");
         }
     }
 
     private void animatePageTransition(boolean goingForward) {
-        Log.d(TAG, "animatePageTransition: Going " + (goingForward ? "forward" : "backward"));
         int animationResource = goingForward ? R.anim.slide_left : R.anim.slide_right;
-        binding.recyclerView.startAnimation(AnimationUtils.loadAnimation(this, animationResource));
+        Animation animation = AnimationUtils.loadAnimation(this, animationResource);
+        binding.recyclerView.startAnimation(animation);
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    private void setupGestureDetector() {
-        gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
-            private static final int SWIPE_THRESHOLD = 100;
-            private static final int SWIPE_VELOCITY_THRESHOLD = 100;
-
-            @Override
-            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-                if (e1 == null || e2 == null) {
-                    return false; // One of the events is null, so we can't process this fling
-                }
-                float diffX = e2.getX() - e1.getX();
-                float diffY = e2.getY() - e1.getY();
-                if (Math.abs(diffX) > Math.abs(diffY) &&
-                        Math.abs(diffX) > SWIPE_THRESHOLD &&
-                        Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
-                    if (diffX > 0) {
-                        runOnUiThread(() -> goToPreviousPageWithAnimation());
-                    } else {
-                        runOnUiThread(() -> goToNextPageWithAnimation());
-                    }
-                    return true;
-                }
-                return false;
-            }
-        });
-
-        binding.recyclerView.setOnTouchListener((v, event) -> {
-            gestureDetector.onTouchEvent(event);
-            return false; // Allow the event to be processed by the RecyclerView as well
-        });
-    }
-
-    // Initialize ViewModel and observe LiveData
     private void setupViewModel() {
         userViewModel = new ViewModelProvider(this).get(UserViewModel.class);
         userViewModel.getUsers().observe(this, users -> {
             if (users != null) {
+                Log.d(TAG, "setupViewModel: Received updated user list. Size: " + users.size());
                 userAdapter.setUsers(users);
+                setupGestureHandler(); // Reset gesture handler when user list updates
             } else {
-                Log.e(TAG, "Received null user list");
+                Log.e(TAG, "setupViewModel: Received null user list");
             }
         });
         userViewModel.getTotalUsers().observe(this, this::updateUserCount);
         userViewModel.loadAllUsers();
     }
 
-    // Update user count display
     @SuppressLint("SetTextI18n")
     private void updateUserCount(int count) {
+        Log.d(TAG, "updateUserCount: Updating user count to " + count);
         binding.userCountTextView.setText("Found " + count + " users");
     }
 
-    // Setup the toolbar with logo
     private void setupToolbar() {
         setSupportActionBar(binding.toolbar);
         if (getSupportActionBar() != null) {
@@ -159,24 +161,28 @@ public class MainActivity extends AppCompatActivity implements
             logo.setLayoutParams(params);
 
             binding.toolbar.addView(logo);
+            Log.d(TAG, "setupToolbar: Toolbar setup complete");
+        } else {
+            Log.e(TAG, "setupToolbar: SupportActionBar is null");
         }
     }
 
-    // Show delete confirmation dialog
     private void showDeleteConfirmationDialog(User user) {
-        DeleteDialog dialog = new DeleteDialog(this, user, user1 -> userViewModel.deleteUserAndReload(user1));
+        DeleteDialog dialog = new DeleteDialog(this, user, user1 -> {
+            Log.d(TAG, "showDeleteConfirmationDialog: User confirmed deletion. Deleting user: " + user1.getFirstName() + " " + user1.getLastName());
+            userViewModel.deleteUserAndReload(user1);
+        });
         dialog.show();
     }
 
-    // Handle delete click from adapter
     @Override
     public void onDeleteClick(User user) {
         showDeleteConfirmationDialog(user);
     }
 
-    // Setup FAB for adding new user
     private void setupFab() {
         fabClickDebounce = ClickDebounce.wrap(param -> {
+            Log.d(TAG, "setupFab: FAB clicked");
             KeyboardUtils.hideKeyboard(this);
             Intent intent = new Intent(MainActivity.this, EditUserActivity.class);
             intent.putExtra(EditUserActivity.EXTRA_STATE, EditUserActivity.STATE_ADD);
@@ -189,15 +195,14 @@ public class MainActivity extends AppCompatActivity implements
         itemClickDebounce = ClickDebounce.wrap(this::handleItemClick);
     }
 
-    // Handle item click from adapter
     @Override
     public void onItemClick(User user) {
+        Log.d(TAG, "onItemClick: Item clicked for user: " + user.getFirstName() + " " + user.getLastName());
         itemClickDebounce.onClick(user);
     }
 
-    // Handle the actual item click logic
     private void handleItemClick(User user) {
-        Log.d(TAG, "handleItemClick: User selected - " + user.toString());
+        Log.d(TAG, "handleItemClick: Handling click for user: " + user.getFirstName() + " " + user.getLastName());
         KeyboardUtils.hideKeyboard(this);
         Intent intent = new Intent(this, EditUserActivity.class);
         intent.putExtra(EditUserActivity.EXTRA_STATE, EditUserActivity.STATE_EDIT);
@@ -205,11 +210,10 @@ public class MainActivity extends AppCompatActivity implements
         editUserLauncher.launch(intent);
     }
 
-    // ActivityResultLauncher for handling EditUserActivity results
     private final ActivityResultLauncher<Intent> editUserLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
-                Log.d(TAG, "editUserLauncher: Received result from EditUserActivity. Result code: " + result.getResultCode());
+                Log.d(TAG, "editUserLauncher: result was " + (result.getResultCode() == RESULT_OK ? "successful" : "unsuccessful"));
                 if (result.getResultCode() == RESULT_OK) {
                     Intent data = result.getData();
                     if (data != null && data.hasExtra("UPDATED_USER")) {
@@ -220,10 +224,24 @@ public class MainActivity extends AppCompatActivity implements
                         Log.d(TAG, "editUserLauncher: No updated user data received. Reloading all users.");
                         userViewModel.loadAllUsers();
                     }
-                    // Clear the search bar when returning from EditUserActivity
                     searchBarManager.clearSearchBar();
                 } else {
                     Log.d(TAG, "editUserLauncher: EditUserActivity did not return RESULT_OK");
                 }
             });
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        Log.d(TAG, "onDestroy: MainActivity is being destroyed");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (binding.recyclerView != null) {
+            setupGestureHandler();
+        }
+        Log.d(TAG, "onResume: Gesture handler reset");
+    }
 }

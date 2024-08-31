@@ -19,6 +19,10 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     private OnDeleteClickListener deleteListener;
     private OnItemClickListener itemClickListener;
 
+    public List<User> getUsers() {
+        return users;
+    }
+
     public interface OnDeleteClickListener {
         void onDeleteClick(User user);
     }
