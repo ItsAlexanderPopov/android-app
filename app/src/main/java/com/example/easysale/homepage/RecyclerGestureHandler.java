@@ -17,6 +17,7 @@ public class RecyclerGestureHandler implements RecyclerView.OnItemTouchListener 
 
     private final OnSwipeListener swipeListener;
     private final OnItemClickListener clickListener;
+    private final OnDeleteClickListener deleteClickListener;
     private float startX;
     private float startY;
     private long startTime;
@@ -24,9 +25,10 @@ public class RecyclerGestureHandler implements RecyclerView.OnItemTouchListener 
     private boolean isWaitingForReset = false;
     private final Handler handler = new Handler(Looper.getMainLooper());
 
-    public RecyclerGestureHandler(OnSwipeListener swipeListener, OnItemClickListener clickListener) {
+    public RecyclerGestureHandler(OnSwipeListener swipeListener, OnItemClickListener clickListener, OnDeleteClickListener deleteClickListener) {
         this.swipeListener = swipeListener;
         this.clickListener = clickListener;
+        this.deleteClickListener = deleteClickListener;
     }
 
     @Override
@@ -88,9 +90,27 @@ public class RecyclerGestureHandler implements RecyclerView.OnItemTouchListener 
             if (childView != null) {
                 int position = rv.getChildAdapterPosition(childView);
                 Log.d(TAG, "Item click at position " + position);
-                clickListener.onItemClick(childView, position);
+
+                // Check if the click is on the delete button
+                View deleteButton = childView.findViewById(com.example.easysale.R.id.deleteImageView);
+                if (deleteButton != null && isViewClicked(deleteButton, e.getRawX(), e.getRawY())) {
+                    Log.d(TAG, "Delete click at position " + position);
+                    deleteClickListener.onDeleteClick(position);
+                } else {
+                    clickListener.onItemClick(childView, position);
+                }
             }
         }
+    }
+
+    private boolean isViewClicked(View view, float x, float y) {
+        int[] location = new int[2];
+        view.getLocationOnScreen(location);
+        int viewX = location[0];
+        int viewY = location[1];
+
+        return (x > viewX && x < (viewX + view.getWidth()) &&
+                y > viewY && y < (viewY + view.getHeight()));
     }
 
     private void resetSwipeState() {
@@ -119,5 +139,9 @@ public class RecyclerGestureHandler implements RecyclerView.OnItemTouchListener 
 
     public interface OnItemClickListener {
         void onItemClick(View view, int position);
+    }
+
+    public interface OnDeleteClickListener {
+        void onDeleteClick(int position);
     }
 }

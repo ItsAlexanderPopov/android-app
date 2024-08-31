@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
@@ -35,8 +34,9 @@ public class MainActivity extends AppCompatActivity implements
     private SearchBarManager searchBarManager;
     private PaginationManager paginationManager;
     private RecyclerGestureHandler gestureHandler;
-    private ClickDebounce fabClickDebounce;
-    private ClickDebounce itemClickDebounce;
+    private ClickDebounce<Void> fabClickDebounce;
+    private ClickDebounce<User> itemClickDebounce;
+    private ClickDebounce<User> deleteClickDebounce;
     private int currentPage = 1;
 
     @Override
@@ -67,7 +67,6 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void setupGestureHandler() {
-
         if (gestureHandler != null) {
             binding.recyclerView.removeOnItemTouchListener(gestureHandler);
         }
@@ -89,13 +88,17 @@ public class MainActivity extends AppCompatActivity implements
                 (view, position) -> {
                     User user = userAdapter.getUsers().get(position);
                     Log.d(TAG, "onItemClick: Clicked on user: " + user.getFirstName() + " " + user.getLastName());
-                    handleItemClick(user);
+                    itemClickDebounce.onClick(user);
+                },
+                position -> {
+                    User user = userAdapter.getUsers().get(position);
+                    Log.d(TAG, "onDeleteClick: Delete clicked for user: " + user.getFirstName() + " " + user.getLastName());
+                    deleteClickDebounce.onClick(user);
                 }
         );
 
         binding.recyclerView.addOnItemTouchListener(gestureHandler);
     }
-
 
     private void goToNextPageWithAnimation() {
         if (currentPage < userViewModel.getTotalPages().getValue()) {
@@ -177,7 +180,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onDeleteClick(User user) {
-        showDeleteConfirmationDialog(user);
+        deleteClickDebounce.onClick(user);
     }
 
     private void setupFab() {
@@ -193,6 +196,7 @@ public class MainActivity extends AppCompatActivity implements
 
     private void setupItemClick() {
         itemClickDebounce = ClickDebounce.wrap(this::handleItemClick);
+        deleteClickDebounce = ClickDebounce.wrap(this::showDeleteConfirmationDialog);
     }
 
     @Override
