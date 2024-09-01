@@ -7,18 +7,27 @@ Manipulate a user list and save locally to the device.
 
 ## Table of Contents
 
-- [Features](#features)
+- [Main Features](#main-features)
+- [Deeper Details](#deeper-details)
 - [Installation](#installation)
-- [License](#license)
+- [Screenshots](#screenshots)
 
-## Features
+## Main Features
 
 - **Create User**: Add new users to the list.
 - **Update User**: Modify existing user information.
 - **Delete User**: Remove users from the list.
 - **Local Storage**: Saves user list locally on the device.
-- **Pagination**: Navigate the users through pagination buttons.
+- **Pagination**: Navigate the users through pagination buttons or side swiping.
 - **Searchbar**: Filter user data live in a functional searchbar.
+- **Device Gallery**: Avatars can be editted and uploaded from device photo gallery.
+
+## Deeper Details
+
+- **API**: All CRUD operations will go through REQRES API and be dependant on the responses, user and devs will be notified of any server errors.
+- **Gesture Detector**: Multiple gestures and listeners applied over RecyclerView and its' children, scrolling, on click and on fling.
+- **Catlogs**: Most classes include detailed debugging logs with corresponding class names as TAGS.
+- **Validations**: New users will go through basic real life scenario validations on names and email that must be unique as well. 
 
 ## Installation
 
@@ -40,6 +49,7 @@ Follow these steps to install and run the app:
     - Connect an Android device or start an emulator.
     - Click on `Run -> Run 'app'` or use the `Shift+F10` shortcut.
 
-## License
+## Screenshots
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+<img src="https://github.com/user-attachments/assets/514325fa-1265-4f3e-a59f-b61fe167f687" width="300" />
+<img src="https://github.com/user-attachments/assets/9037233d-6995-4f4b-9f0a-0150b3be5a23" width="300" />
