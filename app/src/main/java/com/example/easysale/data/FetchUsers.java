@@ -3,6 +3,7 @@ package com.example.easysale.data;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 
@@ -20,8 +21,10 @@ public class FetchUsers {
     private final UserDao userDao;
     private static final String TAG = "FetchUsers";
     boolean initialCheckDone = false;
+    private Context context;
 
     public FetchUsers(Context context) {
+        this.context = context;
         apiService = RetrofitClient.getClient().create(ApiService.class);
         userDao = UserDatabase.getDatabase(context).userDao();
     }
@@ -46,6 +49,7 @@ public class FetchUsers {
         void onError(String error);
     }
 
+    // Fetch all users from the API and local database
     public void getAllUsers(final OnUsersFetchListener listener) {
         if (!initialCheckDone) {
             initialCheckDone = true;
@@ -55,6 +59,7 @@ public class FetchUsers {
         }
     }
 
+    // Check if there are any users in the local database and fetch them from the API if empty
     private void checkAndFetchUsers(OnUsersFetchListener listener) {
         List<User> localUsers = userDao.getAllUsers();
         if (localUsers.isEmpty()) {
@@ -65,12 +70,13 @@ public class FetchUsers {
         }
     }
 
+    // Fetch users from the local database
     private void fetchLocalUsers(OnUsersFetchListener listener) {
         List<User> localUsers = userDao.getAllUsers();
         listener.onUsersFetched(localUsers, localUsers.size());
     }
 
-    // By API's default per_page is 6 but it can be changed to whatever with this function and it will work with our GET implementation
+    // Recursive method to fetch users from the API
     private void fetchUsersRecursively(final int page, final List<User> allUsers, final OnUsersFetchListener listener) {
         apiService.getUsers(page, 6).enqueue(new Callback<UserResponse>() {
             @Override
@@ -90,13 +96,17 @@ public class FetchUsers {
                         listener.onUsersFetched(allUsers, allUsers.size());
                     }
                 } else {
-                    listener.onError("Error fetching users: " + response.message());
+                    String errorMsg = "Unable to fetch users. Please try again later.";
+                    showToast(errorMsg);
+                    listener.onError(errorMsg);
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<UserResponse> call, @NonNull Throwable throwable) {
-                listener.onError("Error fetching users: " + throwable.getMessage());
+                String errorMsg = "Network error. Please check your connection and try again.";
+                showToast(errorMsg);
+                listener.onError(errorMsg);
             }
         });
     }
@@ -108,10 +118,8 @@ public class FetchUsers {
                 Log.d(TAG, "createUser: Response code: " + response.code());
                 Log.d(TAG, "createUser: " + response.body().getFirstName() + " " + response.body().getLastName() + ", email: " + response.body().getEmail());
                 if (response.isSuccessful() && response.body() != null) {
-                    // Use the data returned from the API
                     User createdUser = response.body();
                     AsyncTask.execute(() -> {
-                        // The API doesn't return ID so we create it ourselves
                         int newID = userDao.getMaxUserId() + 1;
                         Log.d(TAG, "createUser: Generated new ID: " + newID);
                         createdUser.setId(newID);
@@ -119,14 +127,18 @@ public class FetchUsers {
                     });
                     listener.onUserCreated(createdUser);
                 } else {
-                    listener.onError("Error creating user: " + response.message());
+                    String errorMsg = "Unable to create user. Please try again.";
+                    showToast(errorMsg);
+                    listener.onError(errorMsg);
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<User> call, @NonNull Throwable t) {
                 Log.e(TAG, "Create user failed", t);
-                listener.onError("Error creating user: " + t.getMessage());
+                String errorMsg = "Network error. User creation failed. Please try again.";
+                showToast(errorMsg);
+                listener.onError(errorMsg);
             }
         });
     }
@@ -139,21 +151,24 @@ public class FetchUsers {
                 Log.d(TAG, "updateUser: name: " + response.body().getFirstName() + " " + response.body().getLastName() + ", email: " + response.body().getEmail() + "");
                 if (response.isSuccessful() && response.body() != null) {
                     User updatedUser = response.body();
-                    // Update only the fields that the API returns
                     user.setFirstName(updatedUser.getFirstName());
                     user.setLastName(updatedUser.getLastName());
                     user.setEmail(updatedUser.getEmail());
                     AsyncTask.execute(() -> userDao.update(user));
                     listener.onUserUpdated(user);
                 } else {
-                    listener.onError("Error updating user: " + response.message());
+                    String errorMsg = "Unable to update user. Please try again.";
+                    showToast(errorMsg);
+                    listener.onError(errorMsg);
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<User> call, @NonNull Throwable t) {
                 Log.e(TAG, "Update failed", t);
-                listener.onError("Error updating user: " + t.getMessage());
+                String errorMsg = "Network error. User update failed. Please try again.";
+                showToast(errorMsg);
+                listener.onError(errorMsg);
             }
         });
     }
@@ -169,14 +184,22 @@ public class FetchUsers {
                     AsyncTask.execute(() -> userDao.delete(user));
                     listener.onUserDeleted();
                 } else {
-                    listener.onError("Error deleting user: " + response.message());
+                    String errorMsg = "Unable to delete user. Please try again.";
+                    showToast(errorMsg);
+                    listener.onError(errorMsg);
                 }
             }
 
             @Override
             public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
-                listener.onError("Error deleting user: " + t.getMessage());
+                String errorMsg = "Network error. User deletion failed. Please try again.";
+                showToast(errorMsg);
+                listener.onError(errorMsg);
             }
         });
+    }
+
+    private void showToast(final String message) {
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
     }
 }
