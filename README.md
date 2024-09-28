@@ -33,19 +33,23 @@ Manipulate a user list and save locally to the device.
 
 Follow these steps to install and run the app:
 
-1. **Clone the repository:**
+1. **Init Git:**
+    ```sh
+    git init
+    ```
+2. **Clone the repository:**
     ```sh
     git clone https://github.com/ItsAlexanderPopov/android-app.git
     ```
-2. **Open the project in Android Studio:**
+3. **Open the project in Android Studio:**
     - Open Android Studio.
     - Click on `File -> Open`.
     - Navigate to the cloned repository folder and select it.
 
-3. **Build the project:**
+4. **Build the project:**
     - Click on `Build -> Make Project` or use the `Ctrl+F9` shortcut.
 
-4. **Run the app:**
+5. **Run the app:**
     - Connect an Android device or start an emulator.
     - Click on `Run -> Run 'app'` or use the `Shift+F10` shortcut.
 
